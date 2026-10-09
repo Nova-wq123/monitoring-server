@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard | ENKEI Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand-inline">
+        <div class="brand-mark small">E</div>
+        <div>
+            <strong>ENKEI MONITORING</strong>
+            <small>Windows Server Infrastructure</small>
+        </div>
+    </div>
+    <div class="user-area">
+        <span>{{ fullname }}</span>
+        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</header>
+
+<main class="container">
+    <section class="heading">
+        <div>
+            <p class="eyebrow">IT INFRASTRUCTURE</p>
+            <h1>Server Monitoring Dashboard</h1>
+            <p class="muted">Pantau kondisi server dan penggunaan resource.</p>
+        </div>
+        <span class="live">● LIVE MONITORING</span>
+    </section>
+
+    <section class="stats">
+        <article class="card">
+            <span class="stat-label">CPU Usage</span>
+            <h2 id="cpuValue">--%</h2>
+            <span id="cpuStatus" class="status">Menunggu data</span>
+        </article>
+
+        <article class="card">
+            <span class="stat-label">RAM Usage</span>
+            <h2 id="ramValue">--%</h2>
+            <span id="ramStatus" class="status">Menunggu data</span>
+        </article>
+
+        <article class="card">
+            <span class="stat-label">Disk Usage Tertinggi</span>
+            <h2 id="diskValue">--%</h2>
+            <span id="diskStatus" class="status">Menunggu data</span>
+        </article>
+
+        <article class="card">
+            <span class="stat-label">Device Status</span>
+            <h2 id="deviceValue">--</h2>
+            <span id="serverName" class="muted">Menunggu data</span>
+        </article>
+    </section>
+
+    <section class="details-grid">
+        <article class="card">
+            <h3>CPU & RAM History</h3>
+            <p class="muted">20 data monitoring terakhir</p>
+            <canvas id="resourceChart"></canvas>
+        </article>
+
+        <article class="card">
+            <h3>Informasi Server</h3>
+            <div class="info-row"><span>Hostname</span><strong id="hostname">-</strong></div>
+            <div class="info-row"><span>IP Address</span><strong id="ipAddress">-</strong></div>
+            <div class="info-row"><span>Update Terakhir</span><strong id="lastUpdate">-</strong></div>
+
+            <hr>
+            <h3>Status Backup</h3>
+            <h2 id="backupValue">UNKNOWN</h2>
+            <p id="backupDetail" class="muted">Belum ada data backup.</p>
+        </article>
+    </section>
+
+    <section class="card disk-card">
+        <h3>Disk Monitoring</h3>
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Drive</th>
+                        <th>Total (GB)</th>
+                        <th>Terpakai (GB)</th>
+                        <th>Sisa (GB)</th>
+                        <th>Penggunaan</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="diskTable">
+                    <tr><td colspan="6">Menunggu data disk...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <footer>
+        <span id="connectionStatus">Menghubungkan ke server...</span>
+        <p>Windows Server Monitoring System · 2026</p>
+    </footer>
+</main>
+
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

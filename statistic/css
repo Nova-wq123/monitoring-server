@@ -1,0 +1,384 @@
+:root {
+    --blue: #1769c2;
+    --navy: #10365f;
+    --light: #edf5ff;
+    --white: #fff;
+    --text: #1b3552;
+    --muted: #71839a;
+    --border: #dce7f3;
+    --green: #138957;
+    --orange: #bd790e;
+    --red: #c93434;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+    background: #f4f8fd;
+}
+
+a {
+    text-decoration: none;
+}
+
+.login-page {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    background: linear-gradient(135deg, #dcecff, #fff 70%);
+}
+
+.login-card {
+    width: 100%;
+    max-width: 430px;
+    padding: 40px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: 0 18px 55px #10365f16;
+}
+
+.brand-mark {
+    display: grid;
+    place-items: center;
+    width: 65px;
+    height: 65px;
+    border: 4px solid var(--blue);
+    border-radius: 50% 50% 50% 12px;
+    color: var(--blue);
+    font-size: 39px;
+    font-weight: 800;
+    margin-bottom: 20px;
+}
+
+.brand-mark.small {
+    width: 43px;
+    height: 43px;
+    font-size: 25px;
+    margin: 0;
+}
+
+.eyebrow {
+    color: var(--blue);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+h1 {
+    color: var(--navy);
+}
+
+.login-card h1 {
+    margin: 8px 0;
+    font-size: 29px;
+}
+
+.muted {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+label {
+    display: block;
+    margin: 20px 0 8px;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+input {
+    width: 100%;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    outline: none;
+}
+
+input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px #1769c218;
+}
+
+button {
+    width: 100%;
+    padding: 15px;
+    margin-top: 25px;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    background: linear-gradient(100deg, #1975d2, #104e9a);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:hover {
+    filter: brightness(1.08);
+}
+
+.error {
+    padding: 12px;
+    color: var(--red);
+    background: #fff0f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.security-note {
+    margin-top: 25px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+.topbar {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    min-height: 76px;
+    padding: 14px 4%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.brand-inline,
+.user-area {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.brand-inline strong,
+.brand-inline small {
+    display: block;
+}
+
+.brand-inline strong {
+    font-size: 15px;
+    color: var(--navy);
+}
+
+.brand-inline small {
+    margin-top: 5px;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.user-area {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.logout {
+    padding: 10px 14px;
+    color: var(--blue);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+}
+
+.container {
+    max-width: 1450px;
+    margin: auto;
+    padding: 30px;
+}
+
+.heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.heading h1 {
+    margin: 8px 0;
+    font-size: 27px;
+}
+
+.heading p {
+    margin-top: 5px;
+}
+
+.live {
+    flex-shrink: 0;
+    padding: 10px 14px;
+    border-radius: 25px;
+    background: #e5f7ed;
+    color: var(--green);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+}
+
+.card {
+    min-width: 0;
+    padding: 23px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    box-shadow: 0 5px 20px #10365f08;
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.card h2 {
+    margin: 17px 0 12px;
+    color: var(--navy);
+    font-size: 29px;
+}
+
+.card h3 {
+    margin-top: 0;
+    font-size: 16px;
+}
+
+.status {
+    display: inline-block;
+    padding: 6px 9px;
+    border-radius: 20px;
+    background: #e5f7ed;
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.status-warning {
+    color: var(--orange);
+    background: #fff3dc;
+}
+
+.status-critical {
+    color: var(--red);
+    background: #ffebeb;
+}
+
+.status-unknown {
+    color: #64748b;
+    background: #edf1f6;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 0.8fr;
+    gap: 20px;
+    margin-top: 22px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 14px 0;
+    border-bottom: 1px solid #edf1f6;
+    font-size: 12px;
+}
+
+.info-row span {
+    color: var(--muted);
+}
+
+.info-row strong {
+    overflow-wrap: anywhere;
+    text-align: right;
+}
+
+hr {
+    margin: 25px 0;
+    border: none;
+    border-top: 1px solid var(--border);
+}
+
+.disk-card {
+    margin-top: 22px;
+}
+
+.table-scroll {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+
+th, td {
+    padding: 14px 12px;
+    border-bottom: 1px solid #edf1f6;
+    text-align: left;
+    white-space: nowrap;
+}
+
+th {
+    color: #5f7792;
+    background: #f4f8fd;
+    font-size: 10px;
+    text-transform: uppercase;
+}
+
+footer {
+    padding: 28px 0 5px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+}
+
+footer p {
+    margin-top: 10px;
+}
+
+@media (max-width: 1000px) {
+    .stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 18px;
+    }
+
+    .stats {
+        grid-template-columns: 1fr;
+    }
+
+    .heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .login-card {
+        padding: 28px;
+    }
+
+    .topbar {
+        padding: 14px;
+    }
+
+    .brand-inline strong {
+        font-size: 12px;
+    }
+
+    .user-area span {
+        display: none;
+    }
+}

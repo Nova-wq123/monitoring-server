@@ -1,0 +1,14 @@
+.\venv\Scripts\python.exe app.pyPROJECT ENKEI MONITORING - STRUKTUR SUDAH DIPERBAIKI
+
+Perbaikan: file CSS disalin ke static/css/style.css dan JavaScript disalin ke static/js/dashboard.js agar sesuai dengan url_for static di Flask.
+
+CARA PAKAI:
+1. Ekstrak folder Project ke lokasi yang mudah, misalnya Documents.
+2. Jangan menimpa database MySQL yang sudah ada.
+3. Buka folder Project di VS Code.
+4. Pastikan XAMPP MySQL berjalan.
+5. Di terminal pada folder Project jalankan: .\venv\Scripts\python.exe app.py (jika folder venv lama masih ada).
+6. Jika venv tidak ada, buat dengan: py -3.11 -m venv venv lalu instal: .\venv\Scripts\python.exe -m pip install -r requirements.txt
+7. Buka http://127.0.0.1:5000 dan login memakai akun admin yang sudah dibuat.
+
+Catatan: ZIP ini tidak menyertakan folder venv agar ukuran lebih kecil. Jika Anda memakai project lama, cukup salin folder static yang ada di ZIP ini ke folder Project lama.

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login | ENKEI Server Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+
+<main class="login-card">
+    <div class="brand-mark">E</div>
+    <p class="eyebrow">ENKEI MANUFACTURING</p>
+    <h1>Server Monitoring</h1>
+    <p class="muted">Masuk untuk memantau infrastruktur Windows Server.</p>
+
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="POST">
+        <label for="username">Username</label>
+        <input id="username" name="username" type="text"
+               placeholder="Masukkan username" required autocomplete="username">
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password"
+               placeholder="Masukkan password" required
+               autocomplete="current-password">
+
+        <button type="submit">Login ke Dashboard →</button>
+    </form>
+
+    <p class="security-note">Akses khusus pengguna terdaftar</p>
+</main>
+
+</body>
+</html>
