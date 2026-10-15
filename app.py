@@ -94,7 +94,7 @@ def login():
             try:
                 user = query_one(
                     """
-                    SELECT id, username, password, fullname
+                    SELECT id, username, password_hash, fullname
                     FROM users
                     WHERE username = %s
                     LIMIT 1
@@ -103,7 +103,7 @@ def login():
                 )
 
                 if user and check_password_hash(
-                    user["password"], password
+                    user["password_hash"], password
                 ):
                     session.clear()
                     session["user_id"] = user["id"]
@@ -118,7 +118,7 @@ def login():
                         cursor = conn.cursor()
                         cursor.execute(
                             """
-                        login_logs (user_id, login_time)
+                            INSERT INTO login_logs (user_id, login_time)
                             VALUES (%s, NOW())
                             """,
                             (user["id"],)
