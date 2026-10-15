@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ "Edit" if server else "Tambah" }} Server | ENKEI Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand-inline">
+        <div class="brand-mark small">E</div>
+        <div>
+            <strong>ENKEI MONITORING</strong>
+            <small>Windows Server Infrastructure</small>
+        </div>
+    </div>
+    <div class="user-area">
+        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <a class="nav-link" href="{{ url_for('servers') }}">Daftar Server</a>
+        <span>{{ fullname }}</span>
+        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</header>
+
+<main class="container">
+    <section class="heading">
+        <div>
+            <p class="eyebrow">SERVER MANAGEMENT</p>
+            <h1>{{ "Edit Server" if server else "Tambah Server Baru" }}</h1>
+            <p class="muted">
+                {% if server %}
+                    Perbarui data server <strong>{{ server.hostname }}</strong>.
+                {% else %}
+                    Daftarkan server baru agar bisa dipantau. Hostname harus sama persis dengan hostname Windows server target (dipakai agent.py untuk kirim data).
+                {% endif %}
+            </p>
+        </div>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{ 'success' if category == 'success' else 'error' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <section class="card form-card">
+        <form method="POST">
+            <div class="form-grid">
+                <div class="field full">
+                    <label for="hostname">Hostname</label>
+                    <input id="hostname" name="hostname" type="text"
+                           placeholder="Contoh: WEB-SERVER-01"
+                           value="{{ server.hostname if server else '' }}"
+                           required autocomplete="off">
+                </div>
+
+                <div class="field">
+                    <label for="ip_address">IP Address</label>
+                    <input id="ip_address" name="ip_address" type="text"
+                           placeholder="Contoh: 10.103.10.12"
+                           value="{{ server.ip_address if server else '' }}"
+                           required autocomplete="off">
+                </div>
+
+                <div class="field">
+                    <label for="os_name">Sistem Operasi</label>
+                    <input id="os_name" name="os_name" type="text"
+                           placeholder="Contoh: Windows Server 2019"
+                           value="{{ server.os_name if server else '' }}"
+                           autocomplete="off">
+                </div>
+
+                <div class="field">
+                    <label for="location">Lokasi</label>
+                    <input id="location" name="location" type="text"
+                           placeholder="Contoh: Server Room Lt. 2"
+                           value="{{ server.location if server else '' }}"
+                           autocomplete="off">
+                </div>
+
+                <div class="field">
+                    <label for="device_status">Status Device</label>
+                    <select id="device_status" name="device_status">
+                        <option value="DOWN"
+                            {{ "selected" if not server or server.device_status == "DOWN" else "" }}>
+                            DOWN
+                        </option>
+                        <option value="UP"
+                            {{ "selected" if server and server.device_status == "UP" else "" }}>
+                            UP
+                        </option>
+                    </select>
+                </div>
+
+                <div class="field full">
+                    <label for="description">Deskripsi</label>
+                    <textarea id="description" name="description"
+                              placeholder="Catatan tambahan tentang server ini (opsional)">{{ server.description if server else '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">
+                    {{ "Simpan Perubahan" if server else "Tambah Server" }}
+                </button>
+                <a href="{{ url_for('servers') }}" class="btn btn-secondary">Batal</a>
+            </div>
+        </form>
+    </section>
+</main>
+
+</body>
+</html>
