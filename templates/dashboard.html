@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard | ENKEI Monitoring</title>
+    <title>Dashboard Monitoring</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -11,9 +11,9 @@
 
 <header class="topbar">
     <div class="brand-inline">
-        <div class="brand-mark small">E</div>
+        <!-- <div class="brand-mark small">E</div> -->
         <div>
-            <strong>ENKEI MONITORING</strong>
+            <strong>Dashboard MONITORING</strong>
             <small>Windows Server Infrastructure</small>
         </div>
     </div>
@@ -30,7 +30,13 @@
             <h1>Server Monitoring Dashboard</h1>
             <p class="muted">Pantau kondisi server dan penggunaan resource.</p>
         </div>
-        <span class="live">● LIVE MONITORING</span>
+        <div class="server-picker">
+            <label for="serverSelect">Pilih Server</label>
+            <select id="serverSelect">
+                <option value="">Memuat daftar server...</option>
+            </select>
+            <span class="live">● LIVE MONITORING</span>
+        </div>
     </section>
 
     <section class="stats">

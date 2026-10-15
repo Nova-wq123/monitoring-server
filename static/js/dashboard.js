@@ -2,6 +2,9 @@ const REFRESH_INTERVAL = 10000;
 
 const el = id => document.getElementById(id);
 
+let selectedServerId = null;
+let refreshTimer = null;
+
 function fmt(value) {
     return Number(value).toFixed(1);
 }
@@ -72,11 +75,93 @@ const chart = new Chart(el("resourceChart"), {
     }
 });
 
-async function loadDashboard() {
+// ==========================================
+// DAFTAR SERVER (DROPDOWN)
+// ==========================================
+async function loadServers() {
+    const select = el("serverSelect");
+
     try {
-        const response = await fetch("/api/monitoring", {
-            cache: "no-store"
+        const response = await fetch("/api/servers", { cache: "no-store" });
+
+        if (response.status === 401 || response.redirected) {
+            location.href = "/login";
+            return;
+        }
+
+        const servers = await response.json();
+
+        if (!servers.length) {
+            select.innerHTML = '<option value="">Belum ada server</option>';
+            el("connectionStatus").textContent =
+                "Belum ada server terdaftar. Tambahkan di menu Servers.";
+            el("connectionStatus").style.color = "#c93434";
+            return;
+        }
+
+        const urlParams = new URLSearchParams(location.search);
+        const requestedId = urlParams.get("server_id");
+        const initialId = servers.some(s => String(s.id) === requestedId)
+            ? requestedId
+            : String(servers[0].id);
+
+        select.innerHTML = servers.map(s => `
+            <option value="${s.id}">
+                ${safe(s.hostname)} (${safe(s.ip_address)})
+            </option>
+        `).join("");
+
+        select.value = initialId;
+        selectedServerId = initialId;
+
+        select.addEventListener("change", () => {
+            selectedServerId = select.value;
+
+            const params = new URLSearchParams(location.search);
+            params.set("server_id", selectedServerId);
+            history.replaceState(null, "", "?" + params.toString());
+
+            // Server baru dipilih: kosongkan grafik lama lalu muat ulang.
+            chart.data.labels = [];
+            chart.data.datasets[0].data = [];
+            chart.data.datasets[1].data = [];
+            chart.update("none");
+
+            loadDashboard();
         });
+
+        startAutoRefresh();
+
+    } catch (error) {
+        console.error(error);
+        el("connectionStatus").textContent =
+            "Gagal memuat daftar server. Periksa Flask dan jaringan.";
+        el("connectionStatus").style.color = "#c93434";
+    }
+}
+
+function startAutoRefresh() {
+    loadDashboard();
+
+    if (refreshTimer) {
+        clearInterval(refreshTimer);
+    }
+    refreshTimer = setInterval(loadDashboard, REFRESH_INTERVAL);
+}
+
+// ==========================================
+// DATA MONITORING SERVER TERPILIH
+// ==========================================
+async function loadDashboard() {
+    if (!selectedServerId) {
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `/api/monitoring?server_id=${encodeURIComponent(selectedServerId)}`,
+            { cache: "no-store" }
+        );
 
         if (response.status === 401 || response.redirected) {
             location.href = "/login";
@@ -176,5 +261,4 @@ function statusClass(status) {
     return "";
 }
 
-loadDashboard();
-setInterval(loadDashboard, REFRESH_INTERVAL);
+loadServers();

@@ -7,3 +7,6 @@ DB_CONFIG = {
 }
 
 REFRESH_INTERVAL = 10000
+
+# Dipakai agent.py untuk autentikasi saat kirim data monitoring ke server.
+AGENT_API_KEY = "ganti-dengan-api-key-agent-yang-unik"

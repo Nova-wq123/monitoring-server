@@ -2,12 +2,10 @@
 import os
 import csv
 import io
-import socket
 import ipaddress
 from datetime import datetime
 from functools import wraps
 
-import psutil
 import mysql.connector
 from mysql.connector import IntegrityError
 from flask import (
@@ -16,7 +14,10 @@ from flask import (
 )
 from werkzeug.security import check_password_hash
 
-from config import DB_CONFIG
+from config import DB_CONFIG, AGENT_API_KEY
+
+# Server dianggap OFFLINE jika tidak kirim data lebih dari sekian detik.
+OFFLINE_AFTER_SECONDS = 60
 
 
 # ==========================================
@@ -161,149 +162,301 @@ def dashboard():
 
 
 # ==========================================
-# STATUS SERVER LOKAL
+# UTILITAS STATUS SERVER
 # ==========================================
-def get_local_ip():
-    try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        try:
-            sock.connect(("8.8.8.8", 80))
-            return sock.getsockname()[0]
-        finally:
-            sock.close()
-    except OSError:
-        return "127.0.0.1"
+def compute_device_status(last_seen):
+    """UP jika agent masih kirim data dalam OFFLINE_AFTER_SECONDS, selain itu DOWN."""
+    if not last_seen:
+        return "DOWN"
+
+    age = (datetime.now() - last_seen).total_seconds()
+    return "UP" if age <= OFFLINE_AFTER_SECONDS else "DOWN"
 
 
-def get_disk_usage():
-    disks = []
-
-    for partition in psutil.disk_partitions(all=False):
-        try:
-            usage = psutil.disk_usage(partition.mountpoint)
-            disks.append({
-                "drive": partition.mountpoint,
-                "total_gb": round(usage.total / (1024 ** 3), 2),
-                "used_gb": round(usage.used / (1024 ** 3), 2),
-                "free_gb": round(usage.free / (1024 ** 3), 2),
-                "usage_percent": usage.percent,
-                "status": "WARNING" if usage.percent >= 90 else "NORMAL"
-            })
-        except (PermissionError, OSError):
-            continue
-
-    return disks
+def status_by_threshold(value, warning_at, critical_at):
+    if value >= critical_at:
+        return "CRITICAL"
+    if value >= warning_at:
+        return "WARNING"
+    return "NORMAL"
 
 
-def get_local_metrics():
-    memory = psutil.virtual_memory()
-    disks = get_disk_usage()
-
-    cpu = psutil.cpu_percent(interval=0.3)
-    disk_max = max(
-        [item["usage_percent"] for item in disks],
-        default=0
+# ==========================================
+# DAFTAR SERVER UNTUK DROPDOWN DASHBOARD
+# ==========================================
+@app.route("/api/servers")
+@login_required
+def api_servers():
+    rows = query_all(
+        """
+        SELECT id, hostname, ip_address, last_seen
+        FROM servers
+        ORDER BY hostname
+        """
     )
 
-    return {
-        "hostname": socket.gethostname(),
-        "ip_address": get_local_ip(),
-        "cpu_usage": cpu,
-        "ram_usage": memory.percent,
-        "ram_total_mb": round(memory.total / (1024 ** 2), 2),
-        "ram_used_mb": round(memory.used / (1024 ** 2), 2),
-        "ram_available_mb": round(memory.available / (1024 ** 2), 2),
-        "disk_usage": disk_max,
-        "device_status": "UP",
-        "disks": disks,
-        "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
+    return jsonify([
+        {
+            "id": row["id"],
+            "hostname": row["hostname"],
+            "ip_address": row["ip_address"],
+            "device_status": compute_device_status(row["last_seen"])
+        }
+        for row in rows
+    ])
 
 
 # ==========================================
-# API MONITORING
-# Mengukur komputer tempat Flask berjalan.
+# API MONITORING (dibaca dashboard)
+# Menampilkan data terakhir yang dikirim agent untuk satu server.
 # ==========================================
 @app.route("/api/monitoring")
 @login_required
 def api_monitoring():
     try:
-        metrics = get_local_metrics()
+        server_id = request.args.get("server_id", type=int)
 
-        cpu_status = (
-            "WARNING" if metrics["cpu_usage"] >= 80 else "NORMAL"
-        )
-        ram_status = (
-            "WARNING" if metrics["ram_usage"] >= 80 else "NORMAL"
-        )
-
-        # Ambil server pertama sebagai tujuan penyimpanan histori.
         server = query_one(
-            "SELECT id FROM servers ORDER BY id LIMIT 1"
+            """
+            SELECT id, hostname, ip_address, last_seen
+            FROM servers
+            WHERE id = %s
+            """,
+            (server_id,)
+        ) if server_id else query_one(
+            "SELECT id, hostname, ip_address, last_seen FROM servers ORDER BY hostname LIMIT 1"
         )
 
-        if server:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO monitoring
-                (
-                    server_id, cpu_usage, ram_usage,
-                    ram_total_mb, ram_used_mb, ram_available_mb,
-                    cpu_status, ram_status, collected_at
-                )
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
-                """,
-                (
-                    server["id"],
-                    metrics["cpu_usage"],
-                    metrics["ram_usage"],
-                    metrics["ram_total_mb"],
-                    metrics["ram_used_mb"],
-                    metrics["ram_available_mb"],
-                    cpu_status,
-                    ram_status
-                )
-            )
-            conn.commit()
-            cursor.close()
-            conn.close()
+        if not server:
+            return jsonify({
+                "error": "Belum ada server terdaftar. Tambahkan server terlebih dahulu."
+            }), 404
+
+        device_status = compute_device_status(server["last_seen"])
+
+        latest = query_one(
+            """
+            SELECT cpu_usage, ram_usage, ram_total_mb, ram_used_mb,
+                   ram_available_mb, cpu_status, ram_status, collected_at
+            FROM monitoring
+            WHERE server_id = %s
+            ORDER BY collected_at DESC
+            LIMIT 1
+            """,
+            (server["id"],)
+        )
+
+        disk_rows = query_all(
+            """
+            SELECT dm.drive_name, dm.total_gb, dm.used_gb, dm.free_gb,
+                   dm.usage_percentage, dm.disk_status
+            FROM disk_monitoring dm
+            INNER JOIN (
+                SELECT drive_name, MAX(collected_at) AS max_time
+                FROM disk_monitoring
+                WHERE server_id = %s
+                GROUP BY drive_name
+            ) latest_disk
+            ON latest_disk.drive_name = dm.drive_name
+            AND latest_disk.max_time = dm.collected_at
+            WHERE dm.server_id = %s
+            ORDER BY dm.drive_name
+            """,
+            (server["id"], server["id"])
+        )
+
+        backup_row = query_one(
+            """
+            SELECT backup_name, backup_status, message, checked_at
+            FROM backup_monitoring
+            WHERE server_id = %s
+            ORDER BY checked_at DESC
+            LIMIT 1
+            """,
+            (server["id"],)
+        )
 
         history = query_all(
             """
             SELECT cpu_usage, ram_usage, collected_at
             FROM monitoring
+            WHERE server_id = %s
             ORDER BY collected_at DESC
             LIMIT 20
-            """
+            """,
+            (server["id"],)
         )
-
         history.reverse()
 
-        metrics["history"] = [
-            {
-                "cpu": float(row["cpu_usage"] or 0),
-                "ram": float(row["ram_usage"] or 0),
-                "time": str(row["collected_at"])
-            }
-            for row in history
-        ]
+        response = {
+            "cpu": {
+                "usage": float((latest or {}).get("cpu_usage") or 0),
+                "status": (latest or {}).get("cpu_status") or "NO_DATA"
+            },
+            "ram": {
+                "usage": float((latest or {}).get("ram_usage") or 0),
+                "status": (latest or {}).get("ram_status") or "NO_DATA",
+                "total_mb": float((latest or {}).get("ram_total_mb") or 0),
+                "used_mb": float((latest or {}).get("ram_used_mb") or 0),
+                "available_mb": float((latest or {}).get("ram_available_mb") or 0)
+            },
+            "server": {
+                "hostname": server["hostname"],
+                "ip_address": server["ip_address"],
+                "device_status": device_status
+            },
+            "disks": [
+                {
+                    "drive": row["drive_name"],
+                    "total_gb": float(row["total_gb"]),
+                    "used_gb": float(row["used_gb"]),
+                    "free_gb": float(row["free_gb"]),
+                    "usage": float(row["usage_percentage"]),
+                    "status": row["disk_status"]
+                }
+                for row in disk_rows
+            ],
+            "backup": {
+                "status": (backup_row or {}).get("backup_status") or "UNKNOWN",
+                "name": (backup_row or {}).get("backup_name") or "-",
+                "checked_at": str((backup_row or {}).get("checked_at") or "-"),
+                "message": (backup_row or {}).get("message") or "Belum ada data backup."
+            },
+            "updated_at": str(
+                (latest or {}).get("collected_at")
+                or server["last_seen"]
+                or "-"
+            ),
+            "history": [
+                {
+                    "cpu": float(row["cpu_usage"] or 0),
+                    "ram": float(row["ram_usage"] or 0),
+                    "time": str(row["collected_at"])
+                }
+                for row in history
+            ]
+        }
 
-        return jsonify(metrics)
+        return jsonify(response)
 
     except mysql.connector.Error as exc:
         app.logger.exception("Monitoring database error")
         return jsonify({
-            "error": "Gagal membaca atau menyimpan data monitoring.",
+            "error": "Gagal membaca data monitoring.",
             "detail": str(exc)
         }), 500
 
-    except Exception:
-        app.logger.exception("Monitoring error")
+
+# ==========================================
+# API INGEST (dipanggil agent.py di tiap server)
+# ==========================================
+@app.route("/api/agent/report", methods=["POST"])
+def api_agent_report():
+    if request.headers.get("X-API-Key") != AGENT_API_KEY:
+        return jsonify({"error": "API key tidak valid."}), 401
+
+    payload = request.get_json(silent=True) or {}
+    hostname = (payload.get("hostname") or "").strip()
+    ip_address = (payload.get("ip_address") or "").strip()
+
+    if not hostname:
+        return jsonify({"error": "hostname wajib diisi."}), 400
+
+    try:
+        cpu_usage = float(payload.get("cpu_usage", 0))
+        ram_usage = float(payload.get("ram_usage", 0))
+        ram_total_mb = float(payload.get("ram_total_mb", 0))
+        ram_used_mb = float(payload.get("ram_used_mb", 0))
+        ram_available_mb = float(payload.get("ram_available_mb", 0))
+        disks = payload.get("disks") or []
+    except (TypeError, ValueError):
+        return jsonify({"error": "Format data monitoring tidak valid."}), 400
+
+    cpu_status = status_by_threshold(cpu_usage, 70, 85)
+    ram_status = status_by_threshold(ram_usage, 75, 90)
+
+    server = query_one(
+        "SELECT id FROM servers WHERE hostname = %s", (hostname,)
+    )
+
+    if not server:
         return jsonify({
-            "error": "Gagal mengambil data komputer."
+            "error": f"Server '{hostname}' belum terdaftar. Tambahkan di menu Servers dulu."
+        }), 404
+
+    conn = get_db()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            """
+            UPDATE servers
+            SET last_seen = NOW(), device_status = 'UP',
+                ip_address = COALESCE(NULLIF(%s, ''), ip_address)
+            WHERE id = %s
+            """,
+            (ip_address, server["id"])
+        )
+
+        cursor.execute(
+            """
+            INSERT INTO monitoring
+            (
+                server_id, cpu_usage, ram_usage,
+                ram_total_mb, ram_used_mb, ram_available_mb,
+                cpu_status, ram_status, collected_at
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+            """,
+            (
+                server["id"], cpu_usage, ram_usage,
+                ram_total_mb, ram_used_mb, ram_available_mb,
+                cpu_status, ram_status
+            )
+        )
+
+        for disk in disks:
+            try:
+                usage_percentage = float(disk.get("usage_percentage", 0))
+                drive_name = (disk.get("drive_name") or "").strip()
+                if not drive_name:
+                    continue
+
+                disk_status = status_by_threshold(usage_percentage, 80, 90)
+
+                cursor.execute(
+                    """
+                    INSERT INTO disk_monitoring
+                    (
+                        server_id, drive_name, total_gb, used_gb,
+                        free_gb, usage_percentage, disk_status, collected_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                    """,
+                    (
+                        server["id"], drive_name,
+                        float(disk.get("total_gb", 0)),
+                        float(disk.get("used_gb", 0)),
+                        float(disk.get("free_gb", 0)),
+                        usage_percentage, disk_status
+                    )
+                )
+            except (TypeError, ValueError):
+                continue
+
+        conn.commit()
+        return jsonify({"status": "ok"})
+
+    except mysql.connector.Error as exc:
+        conn.rollback()
+        app.logger.exception("Gagal menyimpan data agent")
+        return jsonify({
+            "error": "Gagal menyimpan data monitoring.",
+            "detail": str(exc)
         }), 500
+
+    finally:
+        cursor.close()
+        conn.close()
 
 
 # ==========================================
@@ -315,9 +468,9 @@ def api_backup():
     try:
         row = query_one(
             """
-            SELECT status, backup_time, details
+            SELECT backup_status, checked_at, message
             FROM backup_monitoring
-            ORDER BY backup_time DESC
+            ORDER BY checked_at DESC
             LIMIT 1
             """
         )
@@ -330,9 +483,9 @@ def api_backup():
             })
 
         return jsonify({
-            "status": row.get("status") or "UNKNOWN",
-            "backup_time": str(row.get("backup_time") or ""),
-            "details": row.get("details") or ""
+            "status": row.get("backup_status") or "UNKNOWN",
+            "backup_time": str(row.get("checked_at") or ""),
+            "details": row.get("message") or ""
         })
 
     except mysql.connector.Error:
