@@ -1,24 +1,11 @@
-"""
-Monitoring Agent - ENKEI Monitoring
-
-Jalankan script ini di SETIAP server yang mau dipantau.
-Script ambil data CPU/RAM/Disk lewat psutil, lalu kirim (push) ke
-dashboard Flask tiap beberapa detik.
-
-Cara pakai:
-1. Daftarkan dulu hostname server ini di menu Servers pada dashboard
-   (hostname di dashboard HARUS sama persis dengan hostname Windows server ini).
-2. Set DASHBOARD_URL dan API_KEY di bawah sesuai config.py milik dashboard.
-3. Jalankan: python agent.py
-   (butuh psutil: pip install psutil)
-"""
-
+﻿import subprocess
+import re
+from datetime import datetime
 import json
 import socket
 import time
 import urllib.error
 import urllib.request
-
 import psutil
 
 # ==========================================
@@ -48,15 +35,89 @@ def get_disk_usage():
             usage = psutil.disk_usage(partition.mountpoint)
             disks.append({
                 "drive_name": partition.mountpoint,
-                "total_gb": round(usage.total / (1024 ** 3), 2),
-                "used_gb": round(usage.used / (1024 ** 3), 2),
-                "free_gb": round(usage.free / (1024 ** 3), 2),
+                "total_space": round(usage.total / (1024 ** 3), 2),
+                "used_space": round(usage.used / (1024 ** 3), 2),
+                "free_space": round(usage.free / (1024 ** 3), 2),
                 "usage_percentage": usage.percent
             })
         except (PermissionError, OSError):
             continue
     return disks
 
+def get_backup_status():
+    """
+    Memeriksa riwayat Windows Backup.
+    Tidak menjalankan proses backup.
+    """
+
+    try:
+        result = subprocess.run(
+            ["wbadmin", "get", "versions"],
+            capture_output=True,
+            text=True,
+            timeout=20,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        )
+
+        output = (result.stdout or "") + "\n" + (result.stderr or "")
+        output_lower = output.lower()
+
+        if "no backup was found" in output_lower:
+            return {
+                "backup_name": "Windows Backup",
+                "backup_status": "UNKNOWN",
+                "backup_time": None,
+                "message": "Riwayat Windows Backup tidak ditemukan."
+            }
+
+        if result.returncode != 0:
+            return {
+                "backup_name": "Windows Backup",
+                "backup_status": "UNKNOWN",
+                "backup_time": None,
+                "message": "Pemeriksaan Windows Backup gagal: "
+                           + output.strip()[:300]
+            }
+
+        if "version identifier" in output_lower:
+            return {
+                "backup_name": "Windows Backup",
+                "backup_status": "INFO",
+                "backup_time": None,
+                "message": "Riwayat backup ditemukan. "
+                           "Keberhasilan backup perlu diverifikasi."
+            }
+
+        return {
+            "backup_name": "Windows Backup",
+            "backup_status": "UNKNOWN",
+            "backup_time": None,
+            "message": "Hasil pemeriksaan belum dapat dipastikan."
+        }
+
+    except FileNotFoundError:
+        return {
+            "backup_name": "Windows Backup",
+            "backup_status": "UNKNOWN",
+            "backup_time": None,
+            "message": "Perintah wbadmin tidak tersedia."
+        }
+
+    except subprocess.TimeoutExpired:
+        return {
+            "backup_name": "Windows Backup",
+            "backup_status": "UNKNOWN",
+            "backup_time": None,
+            "message": "Pemeriksaan backup melewati batas waktu."
+        }
+
+    except Exception as exc:
+        return {
+            "backup_name": "Windows Backup",
+            "backup_status": "UNKNOWN",
+            "backup_time": None,
+            "message": f"Pemeriksaan backup gagal: {str(exc)[:200]}"
+        }
 
 def collect_metrics():
     memory = psutil.virtual_memory()
@@ -70,7 +131,8 @@ def collect_metrics():
         "ram_total_mb": round(memory.total / (1024 ** 2), 2),
         "ram_used_mb": round(memory.used / (1024 ** 2), 2),
         "ram_available_mb": round(memory.available / (1024 ** 2), 2),
-        "disks": get_disk_usage()
+        "disks": get_disk_usage(),
+        "backup": get_backup_status()
     }
 
 

@@ -52,3 +52,21 @@ Thumbs.db
 *.mov
 *.wmv
 
+
+# Environment dan file rahasia
+.env
+.env.*
+!.env.example
+config.local.py
+
+# Backup dan file sementara
+*.backup
+*.bak
+app_error_backup.py
+app_rusak_backup.py
+app.py.backup
+agent/agent.py.backup
+
+# Folder duplikat dan perbaikan sementara
+Perbaikan 1/
+Perbaikan 2/

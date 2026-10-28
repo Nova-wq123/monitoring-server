@@ -1,0 +1,14 @@
+PETUNJUK PERBAIKAN ENKEI MONITORING
+
+1. Cadangkan folder project lama terlebih dahulu. Jangan hapus database server_monitoring.
+2. Ekstrak ZIP ini ke folder baru, misalnya C:\monitoring-server-fixed.
+3. Pastikan XAMPP MySQL berstatus Running.
+4. Buka folder hasil ekstrak di VS Code.
+5. Pastikan config.py menggunakan database server_monitoring. Sesuaikan user/password MySQL bila berbeda.
+6. Buka terminal di folder project dan aktifkan venv bila ada: .\venv\Scripts\Activate.ps1
+7. Install dependensi bila diperlukan: py -m pip install -r requirements.txt
+8. Jalankan: py app.py
+9. Buka http://127.0.0.1:5000/login
+
+Kode login mendukung kolom password atau password_hash. Jangan menjalankan server_monitoring.sql di database lama tanpa backup.
+Jika error muncul, kirim traceback terminal.

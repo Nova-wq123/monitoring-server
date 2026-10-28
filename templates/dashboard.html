@@ -3,116 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Dashboard Monitoring</title>
+    <title>ENKEI Monitoring | Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body>
+<body class="dashboard-page">
+<div class="dashboard-shell">
+    <aside class="sidebar" id="sidebar">
+        <a class="side-brand" href="{{ url_for('dashboard') }}">
+            <span class="brand-symbol">E</span>
+            <span class="brand-copy"><strong>ENKEI</strong><small>SERVER MONITORING</small></span>
+        </a>
 
-<header class="topbar">
-    <div class="brand-inline">
-        <!-- <div class="brand-mark small">E</div> -->
-        <div>
-            <strong>Dashboard MONITORING</strong>
-            <small>Windows Server Infrastructure</small>
+        <div class="side-section-label">MENU UTAMA</div>
+        <nav class="side-nav" aria-label="Navigasi utama">
+            <a class="side-link active" href="{{ url_for('dashboard') }}"><span class="side-icon">▦</span><span>Dashboard</span></a>
+            <a class="side-link" href="{{ url_for('servers') }}"><span class="side-icon">▣</span><span>Kelola Server</span></a>
+            <a class="side-link" href="#resourceSection"><span class="side-icon">⌁</span><span>Monitoring Resource</span></a>
+            <a class="side-link" href="#backupSection"><span class="side-icon">◷</span><span>Backup Monitoring</span></a>
+            <a class="side-link" href="#diskSection"><span class="side-icon">▤</span><span>Disk Monitoring</span></a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="side-status-dot"></div>
+            <div><strong>Monitoring System</strong><small>Dashboard lokal</small></div>
         </div>
-    </div>
-    <div class="user-area">
-        <a class="nav-link" href="{{ url_for('servers') }}">Kelola Server</a>
-        <span>{{ fullname }}</span>
-        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
-    </div>
-</header>
+    </aside>
 
-<main class="container">
-    <section class="heading">
-        <div>
-            <p class="eyebrow">IT INFRASTRUCTURE</p>
-            <h1>Server Monitoring Dashboard</h1>
-            <p class="muted">Pantau kondisi server dan penggunaan resource.</p>
+    <main class="main-area">
+        <header class="main-topbar">
+            <div class="topbar-title"><button class="mobile-menu" id="mobileMenu" aria-label="Buka menu">☰</button><div><strong>Dashboard</strong><small>Ringkasan infrastruktur server</small></div></div>
+            <div class="topbar-user"><span class="user-avatar">{{ (fullname or 'A')[0]|upper }}</span><div class="user-copy"><strong>{{ fullname }}</strong><small>Administrator</small></div><a class="top-logout" href="{{ url_for('logout') }}" title="Logout" aria-label="Logout">↗</a></div>
+        </header>
+
+        <div class="dashboard-content">
+            <section class="welcome-row">
+                <div>
+                    <p class="eyebrow">IT INFRASTRUCTURE</p>
+                    <h1>Server Monitoring</h1>
+                    <p class="welcome-subtitle">Pantau kesehatan server dan penggunaan resource dalam satu dashboard.</p>
+                </div>
+                <div class="server-controls">
+                    <label for="serverSelect">Server yang dipantau</label>
+                    <select id="serverSelect"><option value="">Memuat daftar server...</option></select>
+                    <span class="live-pill"><span></span> LIVE MONITORING</span>
+                </div>
+            </section>
+
+            <section class="metric-grid" aria-label="Ringkasan monitoring">
+                <article class="metric-card metric-blue"><div class="metric-top"><span class="metric-label">Total Server</span><span class="metric-icon">▣</span></div><div class="metric-value" id="totalServers">--</div><div class="metric-foot"><span class="metric-foot-dot"></span>Server terdaftar</div></article>
+                <article class="metric-card metric-green"><div class="metric-top"><span class="metric-label">Server Online</span><span class="metric-icon">⌁</span></div><div class="metric-value" id="onlineServers">--</div><div class="metric-foot"><span class="metric-foot-dot"></span><span id="onlineCaption">Status agent</span></div></article>
+                <article class="metric-card metric-purple"><div class="metric-top"><span class="metric-label">CPU Usage</span><span class="metric-icon">◉</span></div><div class="metric-value" id="cpuValue">--<small>%</small></div><div class="metric-foot"><span id="cpuStatus" class="status-chip status-unknown">Menunggu data</span></div></article>
+                <article class="metric-card metric-pink"><div class="metric-top"><span class="metric-label">RAM Usage</span><span class="metric-icon">▥</span></div><div class="metric-value" id="ramValue">--<small>%</small></div><div class="metric-foot"><span id="ramStatus" class="status-chip status-unknown">Menunggu data</span></div></article>
+            </section>
+
+            <section class="content-grid" id="resourceSection">
+                <article class="panel chart-panel">
+                    <div class="panel-heading"><div><h2>CPU &amp; RAM History</h2><p>Riwayat pemakaian resource server terpilih</p></div><span class="panel-tag">REAL-TIME</span></div>
+                    <div class="chart-wrap"><canvas id="resourceChart"></canvas></div>
+                </article>
+                <article class="panel status-panel">
+                    <div class="panel-heading"><div><h2>Status Infrastruktur</h2><p>Kondisi koneksi agent</p></div><span class="panel-icon">◉</span></div>
+                    <div class="donut-wrap"><canvas id="serverStatusChart"></canvas><div class="donut-center"><strong id="donutOnline">0</strong><span>Online</span></div></div>
+                    <div class="legend-list"><div><span class="legend-dot legend-online"></span><span>Online</span><strong id="legendOnline">0</strong></div><div><span class="legend-dot legend-offline"></span><span>Offline</span><strong id="legendOffline">0</strong></div></div>
+                    <div class="selected-server"><div class="selected-server-icon">▣</div><div class="selected-server-copy"><small>SERVER TERPILIH</small><strong id="serverName">Menunggu data</strong><span id="ipAddress">-</span></div><span id="deviceBadge" class="status-chip status-unknown">--</span></div>
+                </article>
+            </section>
+
+            <section class="content-grid lower-grid">
+                <article class="panel info-panel">
+                    <div class="panel-heading"><div><h2>Informasi Server</h2><p>Detail server yang sedang dipilih</p></div><span class="panel-icon">ⓘ</span></div>
+                    <div class="info-list"><div class="info-row"><span>Hostname</span><strong id="hostname">-</strong></div><div class="info-row"><span>IP Address</span><strong id="serverIpInfo">-</strong></div><div class="info-row"><span>Update Monitoring</span><strong id="lastUpdate">-</strong></div><div class="info-row"><span>RAM Terpakai</span><strong id="ramUsed">-</strong></div><div class="info-row"><span>RAM Tersedia</span><strong id="ramAvailable">-</strong></div></div>
+                    <div class="backup-box" id="backupSection"><div class="backup-heading"><span class="backup-icon">◷</span><div><strong>Status Backup</strong><small>Data terakhir dari database</small></div><span id="backupValue" class="status-chip status-unknown">UNKNOWN</span></div><p id="backupDetail">Belum ada data backup.</p></div>
+                </article>
+                <article class="panel server-list-panel">
+                    <div class="panel-heading"><div><h2>Daftar Server</h2><p>Status koneksi semua server terdaftar</p></div><a class="panel-action" href="{{ url_for('servers') }}">Kelola server <span>→</span></a></div>
+                    <div class="table-wrap"><table class="modern-table"><thead><tr><th>Nama Server</th><th>IP Address</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="serverTable"><tr><td colspan="4" class="table-empty">Memuat data server...</td></tr></tbody></table></div>
+                </article>
+            </section>
+
+            <section class="panel disk-panel" id="diskSection">
+                <div class="panel-heading"><div><h2>Disk Monitoring</h2><p>Penggunaan penyimpanan pada server terpilih</p></div><span class="panel-tag">STORAGE</span></div>
+                <div class="table-wrap"><table class="modern-table disk-table"><thead><tr><th>Drive</th><th>Total</th><th>Terpakai</th><th>Tersedia</th><th>Penggunaan</th><th>Status</th></tr></thead><tbody id="diskTable"><tr><td colspan="6" class="table-empty">Menunggu data disk...</td></tr></tbody></table></div>
+            </section>
+
+            <footer class="dashboard-footer"><span id="connectionStatus"><span class="footer-dot"></span>Menghubungkan ke server...</span><span>ENKEI Monitoring System · 2026</span></footer>
         </div>
-        <div class="server-picker">
-            <label for="serverSelect">Pilih Server</label>
-            <select id="serverSelect">
-                <option value="">Memuat daftar server...</option>
-            </select>
-            <span class="live">● LIVE MONITORING</span>
-        </div>
-    </section>
-
-    <section class="stats">
-        <article class="card">
-            <span class="stat-label">CPU Usage</span>
-            <h2 id="cpuValue">--%</h2>
-            <span id="cpuStatus" class="status">Menunggu data</span>
-        </article>
-
-        <article class="card">
-            <span class="stat-label">RAM Usage</span>
-            <h2 id="ramValue">--%</h2>
-            <span id="ramStatus" class="status">Menunggu data</span>
-        </article>
-
-        <article class="card">
-            <span class="stat-label">Disk Usage Tertinggi</span>
-            <h2 id="diskValue">--%</h2>
-            <span id="diskStatus" class="status">Menunggu data</span>
-        </article>
-
-        <article class="card">
-            <span class="stat-label">Device Status</span>
-            <h2 id="deviceValue">--</h2>
-            <span id="serverName" class="muted">Menunggu data</span>
-        </article>
-    </section>
-
-    <section class="details-grid">
-        <article class="card">
-            <h3>CPU & RAM History</h3>
-            <p class="muted">20 data monitoring terakhir</p>
-            <canvas id="resourceChart"></canvas>
-        </article>
-
-        <article class="card">
-            <h3>Informasi Server</h3>
-            <div class="info-row"><span>Hostname</span><strong id="hostname">-</strong></div>
-            <div class="info-row"><span>IP Address</span><strong id="ipAddress">-</strong></div>
-            <div class="info-row"><span>Update Terakhir</span><strong id="lastUpdate">-</strong></div>
-
-            <hr>
-            <h3>Status Backup</h3>
-            <h2 id="backupValue">UNKNOWN</h2>
-            <p id="backupDetail" class="muted">Belum ada data backup.</p>
-        </article>
-    </section>
-
-    <section class="card disk-card">
-        <h3>Disk Monitoring</h3>
-        <div class="table-scroll">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Drive</th>
-                        <th>Total (GB)</th>
-                        <th>Terpakai (GB)</th>
-                        <th>Sisa (GB)</th>
-                        <th>Penggunaan</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="diskTable">
-                    <tr><td colspan="6">Menunggu data disk...</td></tr>
-                </tbody>
-            </table>
-        </div>
-    </section>
-
-    <footer>
-        <span id="connectionStatus">Menghubungkan ke server...</span>
-        <p>Windows Server Monitoring System · 2026</p>
-    </footer>
-</main>
-
+    </main>
+</div>
 <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>

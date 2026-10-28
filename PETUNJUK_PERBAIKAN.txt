@@ -1,14 +1,32 @@
-.\venv\Scripts\python.exe app.pyPROJECT ENKEI MONITORING - STRUKTUR SUDAH DIPERBAIKI
+PETUNJUK MENJALANKAN ENKEI MONITORING
 
-Perbaikan: file CSS disalin ke static/css/style.css dan JavaScript disalin ke static/js/dashboard.js agar sesuai dengan url_for static di Flask.
+Perbaikan yang diterapkan tanpa merombak struktur project:
+- Koneksi aplikasi diarahkan ke database server_monitoring_v2 sesuai server_monitoring.sql.
+- Endpoint agent memperbarui kolom device_status yang memang tersedia di database.
+- Grafik CPU/RAM mengambil data 5 menit terakhir.
+- Form tambah/edit tidak lagi menyediakan OS dan status device manual; status device dikelola oleh agent.
+- requirements.txt disimpan sebagai UTF-8 agar dapat dibaca pip.
+- File JavaScript statis disamakan dengan js/dashboard.js.
 
-CARA PAKAI:
-1. Ekstrak folder Project ke lokasi yang mudah, misalnya Documents.
-2. Jangan menimpa database MySQL yang sudah ada.
-3. Buka folder Project di VS Code.
-4. Pastikan XAMPP MySQL berjalan.
-5. Di terminal pada folder Project jalankan: .\venv\Scripts\python.exe app.py (jika folder venv lama masih ada).
-6. Jika venv tidak ada, buat dengan: py -3.11 -m venv venv lalu instal: .\venv\Scripts\python.exe -m pip install -r requirements.txt
-7. Buka http://127.0.0.1:5000 dan login memakai akun admin yang sudah dibuat.
+LANGKAH:
+1. Ekstrak ZIP ini ke folder project.
+2. Jalankan XAMPP, aktifkan MySQL.
+3. Buka phpMyAdmin, lalu import server_monitoring.sql hanya jika database server_monitoring_v2 belum dibuat. SQL memakai CREATE TABLE IF NOT EXISTS dan tidak menghapus tabel lama.
+4. Buka terminal VS Code pada folder monitoring-server.
+5. Jika venv sudah ada dan berfungsi, gunakan venv tersebut. Jika tidak ada:
+   py -3.11 -m venv venv
+6. Instal dependensi:
+   .\venv\Scripts\python.exe -m pip install -r requirements.txt
+7. Buka config.py dan pastikan username/password MySQL sesuai XAMPP. Ganti AGENT_API_KEY dengan kunci unik, lalu samakan dengan API_KEY pada agent/agent.py.
+8. Jika akun admin belum ada:
+   .\venv\Scripts\python.exe create_admin.py
+9. Jalankan aplikasi:
+   .\venv\Scripts\python.exe app.py
+10. Buka http://127.0.0.1:5000 dan login.
+11. Tambahkan server dengan hostname Windows yang sama persis seperti hasil socket.gethostname() pada agent.
+12. Pada komputer server yang dipantau, ubah DASHBOARD_URL pada agent/agent.py menjadi alamat IP komputer yang menjalankan dashboard, lalu jalankan agent.
 
-Catatan: ZIP ini tidak menyertakan folder venv agar ukuran lebih kecil. Jika Anda memakai project lama, cukup salin folder static yang ada di ZIP ini ke folder Project lama.
+CATATAN:
+- Jangan mengunggah API key, password, file .env, atau data server internal ke repositori publik.
+- Grafik hanya menampilkan data yang benar-benar masuk dalam 5 menit terakhir.
+- Untuk menjalankan agent di komputer lain, komputer tersebut harus dapat mengakses jaringan ke host dashboard dan port 5000.

@@ -33,7 +33,7 @@
                 {% if server %}
                     Perbarui data server <strong>{{ server.hostname }}</strong>.
                 {% else %}
-                    Daftarkan server baru agar bisa dipantau. Hostname harus sama persis dengan hostname Windows server target (dipakai agent.py untuk kirim data).
+                    Daftarkan server baru agar bisa dipantau. Hostname harus sama persis dengan hostname Windows server target. Status device akan diperbarui otomatis oleh agent.
                 {% endif %}
             </p>
         </div>
@@ -67,15 +67,6 @@
                            value="{{ server.ip_address if server else '' }}"
                            required autocomplete="off">
                 </div>
-
-                <div class="field">
-                    <label for="os_name">Sistem Operasi</label>
-                    <input id="os_name" name="os_name" type="text"
-                           placeholder="Contoh: Windows Server 2019"
-                           value="{{ server.os_name if server else '' }}"
-                           autocomplete="off">
-                </div>
-
                 <div class="field">
                     <label for="location">Lokasi</label>
                     <input id="location" name="location" type="text"
@@ -83,21 +74,6 @@
                            value="{{ server.location if server else '' }}"
                            autocomplete="off">
                 </div>
-
-                <div class="field">
-                    <label for="device_status">Status Device</label>
-                    <select id="device_status" name="device_status">
-                        <option value="DOWN"
-                            {{ "selected" if not server or server.device_status == "DOWN" else "" }}>
-                            DOWN
-                        </option>
-                        <option value="UP"
-                            {{ "selected" if server and server.device_status == "UP" else "" }}>
-                            UP
-                        </option>
-                    </select>
-                </div>
-
                 <div class="field full">
                     <label for="description">Deskripsi</label>
                     <textarea id="description" name="description"

@@ -1,0 +1,28 @@
+UPDATE ENKEI MONITORING
+
+Perubahan:
+1. Grafik CPU & RAM sekarang mengambil data 5 menit terakhir.
+2. Form Tambah/Edit Server tidak lagi menampilkan Sistem Operasi dan Status Device.
+3. Status device otomatis dimulai dari DOWN dan diperbarui oleh agent saat mengirim data.
+4. Form diberi penanda wajib/opsional dan penyempurnaan tampilan.
+
+CARA MENJALANKAN DI WINDOWS CMD
+1. Ekstrak ZIP ke folder, misalnya C:\monitoring-server-baru
+2. Buka CMD, pindah ke folder tersebut:
+   cd /d C:\monitoring-server-baru\monitoring-server
+3. Buat virtual environment hanya jika folder venv belum ada:
+   py -m venv venv
+4. Install dependensi:
+   venv\Scripts\python.exe -m pip install -r requirements.txt
+5. Pastikan MySQL di XAMPP aktif dan database sudah diimpor dari server_monitoring.sql.
+6. Buat akun admin jika belum punya:
+   venv\Scripts\python.exe create_admin.py
+7. Jalankan aplikasi:
+   venv\Scripts\python.exe app.py
+8. Buka browser: http://127.0.0.1:5000
+
+CATATAN:
+- Jangan menjalankan `py -m venv venv` saat venv sedang aktif/digunakan.
+- Jika folder venv sudah ada, jangan buat ulang; langsung lanjut ke langkah install dependensi.
+- Jangan upload file .env, password, data server internal, atau kredensial perusahaan ke repositori publik.
+- Grafik 5 menit membutuhkan data monitoring yang memang terkirim ke database selama periode tersebut.
