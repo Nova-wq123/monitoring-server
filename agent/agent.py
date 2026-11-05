@@ -13,7 +13,7 @@ import psutil
 # ==========================================
 DASHBOARD_URL = "http://127.0.0.1:5000"   # ganti dengan alamat server dashboard
 API_KEY = "ganti-dengan-api-key-agent-yang-unik"  # samakan dengan config.py -> AGENT_API_KEY
-INTERVAL_SECONDS = 10
+INTERVAL_SECONDS = 300  # 5 menit
 
 
 def get_local_ip():

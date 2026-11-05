@@ -94,7 +94,7 @@ def login():
             try:
                 user = query_one(
                     """
-                    SELECT id, username, password, fullname, role
+                    SELECT id, username, password_hash, fullname, role
                     FROM users
                     WHERE username = %s
                     LIMIT 1
@@ -103,7 +103,7 @@ def login():
                 )
 
                 if user and check_password_hash(
-                    user["password"], password
+                    user["password_hash"], password
                 ):
                     session.clear()
                     session["user_id"] = user["id"]
@@ -236,18 +236,11 @@ def api_monitoring():
 
         latest = query_one(
             """
-            SELECT
-                cpu_usage,
-                ram_usage,
-                ram_total AS ram_total_mb,
-                ram_used AS ram_used_mb,
-                ram_available AS ram_available_mb,
-                status AS cpu_status,
-                status AS ram_status,
-                created_at AS collected_at
+            SELECT cpu_usage, ram_usage, ram_total_mb, ram_used_mb,
+                   ram_available_mb, cpu_status, ram_status, collected_at
             FROM monitoring
             WHERE server_id = %s
-            ORDER BY created_at DESC
+            ORDER BY collected_at DESC
             LIMIT 1
             """,
             (server["id"],)
@@ -255,97 +248,91 @@ def api_monitoring():
 
         disk_rows = query_all(
             """
-            SELECT dm.drive_name, dm.total_space, dm.used_space, dm.free_space,
-                   dm.usage_percentage, dm.status
+            SELECT dm.drive_name, dm.total_gb, dm.used_gb, dm.free_gb,
+                   dm.usage_percentage, dm.disk_status
             FROM disk_monitoring dm
             INNER JOIN (
-                SELECT drive_name, MAX(created_at) AS max_time
+                SELECT drive_name, MAX(collected_at) AS max_time
                 FROM disk_monitoring
                 WHERE server_id = %s
                 GROUP BY drive_name
             ) latest_disk
               ON latest_disk.drive_name = dm.drive_name
-             AND latest_disk.max_time = dm.created_at
+             AND latest_disk.max_time = dm.collected_at
             WHERE dm.server_id = %s
             ORDER BY dm.drive_name
             """,
             (server["id"], server["id"])
         )
-        
-        backup_row = None
-        try:
-            backup_row = query_one(
-                """
-                SELECT backup_name, backup_status, message, backup_time, created_at
-                FROM backup_monitoring
-                WHERE server_id = %s
-                ORDER BY created_at DESC
-                LIMIT 1
-                """,
-                (server["id"],)
-            )
-        except mysql.connector.Error:
-            app.logger.exception(
-                "Gagal membaca data backup_monitoring."
-            )
+
+        backup_row = query_one(
+            """
+            SELECT backup_name, backup_status, message, checked_at
+            FROM backup_monitoring
+            WHERE server_id = %s
+            ORDER BY checked_at DESC
+            LIMIT 1
+            """,
+            (server["id"],)
+        )
 
         history = query_all(
             """
-            SELECT cpu_usage, ram_usage, created_at
+            SELECT cpu_usage, ram_usage, collected_at
             FROM monitoring
             WHERE server_id = %s
-            ORDER BY created_at DESC
-            LIMIT 100
+            ORDER BY collected_at DESC
+            LIMIT 20
             """,
             (server["id"],)
         )
 
         history.reverse()
 
-        overall_status = (latest or {}).get("status") or "NO_DATA"
         response = {
             "cpu": {
                 "usage": float((latest or {}).get("cpu_usage") or 0),
-                "status": status_by_threshold(float((latest or {}).get("cpu_usage") or 0), 70, 85)
-                    if latest else "NO_DATA"
+                "status": (latest or {}).get("cpu_status") or "NO_DATA"
             },
             "ram": {
                 "usage": float((latest or {}).get("ram_usage") or 0),
-                "status": status_by_threshold(float((latest or {}).get("ram_usage") or 0), 75, 90)
-                    if latest else "NO_DATA",
-                "total_mb": float((latest or {}).get("ram_total") or 0),
-                "used_mb": float((latest or {}).get("ram_used") or 0),
-                "available_mb": float((latest or {}).get("ram_available") or 0)
+                "status": (latest or {}).get("ram_status") or "NO_DATA",
+                "total_mb": float((latest or {}).get("ram_total_mb") or 0),
+                "used_mb": float((latest or {}).get("ram_used_mb") or 0),
+                "available_mb": float((latest or {}).get("ram_available_mb") or 0)
             },
             "server": {
                 "hostname": server["hostname"],
                 "ip_address": server["ip_address"],
                 "device_status": device_status
             },
-            "monitoring_status": overall_status,
             "disks": [
                 {
                     "drive": row["drive_name"],
-                    "total_gb": float(row["total_space"] or 0),
-                    "used_gb": float(row["used_space"] or 0),
-                    "free_gb": float(row["free_space"] or 0),
+                    "total_gb": float(row["total_gb"] or 0),
+                    "used_gb": float(row["used_gb"] or 0),
+                    "free_gb": float(row["free_gb"] or 0),
                     "usage": float(row["usage_percentage"] or 0),
-                    "status": row["status"]
+                    "status": row["disk_status"]
                 }
                 for row in disk_rows
             ],
             "backup": {
                 "status": (backup_row or {}).get("backup_status") or "UNKNOWN",
                 "name": (backup_row or {}).get("backup_name") or "-",
-                "checked_at": str((backup_row or {}).get("backup_time") or (backup_row or {}).get("created_at") or "-"),
+                "checked_at": str((backup_row or {}).get("checked_at") or "-"),
                 "message": (backup_row or {}).get("message") or "Belum ada data backup."
             },
-            "updated_at": str((latest or {}).get("created_at") or server["last_seen"] or "-"),
+            "updated_at": str(
+                (latest or {}).get("collected_at")
+                or server["last_seen"]
+                or "-"
+            ),
             "history": [
                 {
                     "cpu": float(row["cpu_usage"] or 0),
                     "ram": float(row["ram_usage"] or 0),
-                    "time": str(row["created_at"])
+                    "time": str(row["collected_at"])
                 }
                 for row in history
             ]
@@ -408,53 +395,41 @@ def api_agent_report():
     cursor = conn.cursor()
 
     try:
-        # Perbarui status server.
+        # Perbarui status server (kolom device_status, enum UP/DOWN).
         cursor.execute(
             """
             UPDATE servers
             SET last_seen = NOW(),
-                status = 'ONLINE',
+                device_status = 'UP',
                 ip_address = COALESCE(NULLIF(%s, ''), ip_address)
             WHERE id = %s
             """,
             (ip_address, server["id"])
         )
 
-        # Simpan data CPU dan RAM sesuai tabel monitoring.
-        monitoring_status = (
-            "CRITICAL"
-            if cpu_usage >= 85 or ram_usage >= 90
-            else "WARNING"
-            if cpu_usage >= 70 or ram_usage >= 75
-            else "NORMAL"
-        )
+        cpu_status = status_by_threshold(cpu_usage, 70, 85)
+        ram_status = status_by_threshold(ram_usage, 75, 90)
 
+        # Simpan data CPU dan RAM sesuai tabel monitoring.
         cursor.execute(
             """
             INSERT INTO monitoring
             (
-                server_id,
-                cpu_usage,
-                ram_total,
-                ram_used,
-                ram_available,
-                ram_usage,
-                status
+                server_id, cpu_usage, ram_usage,
+                ram_total_mb, ram_used_mb, ram_available_mb,
+                cpu_status, ram_status, collected_at
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
             """,
             (
-                server["id"],
-                cpu_usage,
-                ram_total_mb,
-                ram_used_mb,
-                ram_available_mb,
-                ram_usage,
-                monitoring_status
+                server["id"], cpu_usage, ram_usage,
+                ram_total_mb, ram_used_mb, ram_available_mb,
+                cpu_status, ram_status
             )
         )
 
         # Simpan data disk sesuai tabel disk_monitoring.
+        # agent.py mengirim ukuran disk dengan key total_space/used_space/free_space.
         for disk in disks:
             if not isinstance(disk, dict):
                 continue
@@ -467,9 +442,15 @@ def api_agent_report():
                 if not drive_name:
                     continue
 
-                total_gb = float(disk.get("total_gb", 0))
-                used_gb = float(disk.get("used_gb", 0))
-                free_gb = float(disk.get("free_gb", 0))
+                total_gb = float(
+                    disk.get("total_space", disk.get("total_gb", 0))
+                )
+                used_gb = float(
+                    disk.get("used_space", disk.get("used_gb", 0))
+                )
+                free_gb = float(
+                    disk.get("free_space", disk.get("free_gb", 0))
+                )
                 usage_percentage = float(
                     disk.get("usage_percentage", 0)
                 )
@@ -477,36 +458,21 @@ def api_agent_report():
                 if not 0 <= usage_percentage <= 100:
                     continue
 
-                disk_status = (
-                    "CRITICAL"
-                    if usage_percentage >= 90
-                    else "WARNING"
-                    if usage_percentage >= 80
-                    else "NORMAL"
-                )
+                disk_status = status_by_threshold(usage_percentage, 80, 90)
 
                 cursor.execute(
                     """
                     INSERT INTO disk_monitoring
                     (
-                        server_id,
-                        drive_name,
-                        total_space,
-                        used_space,
-                        free_space,
-                        usage_percentage,
-                        status
+                        server_id, drive_name, total_gb, used_gb,
+                        free_gb, usage_percentage, disk_status, collected_at
                     )
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
                     """,
                     (
-                        server["id"],
-                        drive_name,
-                        total_gb,
-                        used_gb,
-                        free_gb,
-                        usage_percentage,
-                        disk_status
+                        server["id"], drive_name,
+                        total_gb, used_gb, free_gb,
+                        usage_percentage, disk_status
                     )
                 )
 
@@ -514,7 +480,8 @@ def api_agent_report():
                 continue
 
         # Simpan hasil pemeriksaan backup yang dikirim agent.
-        # Status UNKNOWN tetap dipakai jika hasil backup belum terverifikasi.
+        # Tabel backup_monitoring hanya menerima status
+        # SUCCESS/LATE/FAILED/UNKNOWN; status lain (mis. INFO) dipetakan UNKNOWN.
         if isinstance(backup, dict) and backup:
             backup_name = str(
                 backup.get("backup_name") or "Windows Backup"
@@ -523,7 +490,7 @@ def api_agent_report():
                 backup.get("backup_status") or "UNKNOWN"
             ).strip().upper()
             allowed_backup_statuses = {
-                "SUCCESS", "FAILED", "WARNING", "UNKNOWN", "INFO"
+                "SUCCESS", "LATE", "FAILED", "UNKNOWN"
             }
             if backup_status not in allowed_backup_statuses:
                 backup_status = "UNKNOWN"
@@ -532,30 +499,15 @@ def api_agent_report():
                 backup.get("message") or ""
             ).strip()[:1000]
 
-            # Jangan mengarang waktu backup. Hanya terima timestamp yang
-            # sesuai format MySQL; jika tidak ada/invalid, simpan NULL.
-            backup_time = None
-            raw_backup_time = backup.get("backup_time")
-            if raw_backup_time:
-                try:
-                    if isinstance(raw_backup_time, datetime):
-                        backup_time = raw_backup_time.strftime("%Y-%m-%d %H:%M:%S")
-                    else:
-                        backup_time = datetime.fromisoformat(
-                            str(raw_backup_time).replace("Z", "+00:00")
-                        ).strftime("%Y-%m-%d %H:%M:%S")
-                except (TypeError, ValueError):
-                    backup_time = None
-
             cursor.execute(
                 """
                 INSERT INTO backup_monitoring
-                    (server_id, backup_name, backup_status, backup_time, message)
-                VALUES (%s, %s, %s, %s, %s)
+                    (server_id, backup_name, backup_status, message, checked_at)
+                VALUES (%s, %s, %s, %s, NOW())
                 """,
                 (
                     server["id"], backup_name, backup_status,
-                    backup_time, backup_message
+                    backup_message
                 )
             )
 
@@ -589,9 +541,9 @@ def api_backup():
     try:
         row = query_one(
             """
-            SELECT backup_status, backup_time, message, created_at
+            SELECT backup_status, checked_at, message
             FROM backup_monitoring
-            ORDER BY created_at DESC
+            ORDER BY checked_at DESC
             LIMIT 1
             """
         )
@@ -604,10 +556,8 @@ def api_backup():
             })
 
         return jsonify({
-            "status": row.get("backup_status") or "NO_DATA",
-            "backup_time": str(
-                row.get("backup_time") or row.get("created_at") or ""
-            ),
+            "status": row.get("backup_status") or "UNKNOWN",
+            "backup_time": str(row.get("checked_at") or ""),
             "details": row.get("message") or ""
         })
 
@@ -628,9 +578,9 @@ def servers():
     data = query_all(
         """
         SELECT id, hostname, ip_address, os_name,
-       location, description, status AS device_status
-FROM servers
-ORDER BY hostname
+               location, description, device_status
+        FROM servers
+        ORDER BY hostname
         """
     )
 
@@ -652,7 +602,7 @@ def server_add():
         os_name = request.form.get("os_name", "").strip()
         location = request.form.get("location", "").strip()
         description = request.form.get("description", "").strip()
-        status = "OFFLINE"
+        status = request.form.get("device_status", "DOWN").upper()
 
         if not hostname or not ip_address:
             flash("Hostname dan IP address wajib diisi.", "error")
@@ -660,6 +610,9 @@ def server_add():
 
         try:
             ipaddress.ip_address(ip_address)
+
+            if status not in ("UP", "DOWN"):
+                raise ValueError("Status tidak valid.")
 
             conn = get_db()
             try:
@@ -669,7 +622,7 @@ def server_add():
                         """
                         INSERT INTO servers
                         (hostname, ip_address, os_name, location,
-                         description, status)
+                         description, device_status)
                         VALUES (%s, %s, %s, %s, %s, %s)
                         """,
                         (
@@ -691,7 +644,7 @@ def server_add():
             return redirect(url_for("servers"))
 
         except ValueError:
-            flash("Format IP address tidak valid.", "error")
+            flash("Format IP address atau status tidak valid.", "error")
 
         except IntegrityError:
             flash("Hostname atau IP mungkin sudah terdaftar.", "error")
@@ -719,9 +672,9 @@ def server_edit(server_id):
     server = query_one(
         """
         SELECT id, hostname, ip_address, os_name,
-       location, description, status
-FROM servers
-WHERE id = %s
+               location, description, device_status
+        FROM servers
+        WHERE id = %s
         """,
         (server_id,)
     )
@@ -733,8 +686,10 @@ WHERE id = %s
     if request.method == "POST":
         hostname = request.form.get("hostname", "").strip()
         ip_address = request.form.get("ip_address", "").strip()
+        os_name = request.form.get("os_name", "").strip()
         location = request.form.get("location", "").strip()
         description = request.form.get("description", "").strip()
+        status = request.form.get("device_status", "DOWN").upper()
 
         if not hostname or not ip_address:
             flash("Hostname dan IP address wajib diisi.", "error")
@@ -743,20 +698,23 @@ WHERE id = %s
         try:
             ipaddress.ip_address(ip_address)
 
+            if status not in ("UP", "DOWN"):
+                raise ValueError("Status tidak valid.")
+
             conn = get_db()
             cursor = conn.cursor()
             try:
                 cursor.execute(
                     """
                     UPDATE servers
-                    SET hostname=%s, ip_address=%s,
-                        location=%s, description=%s
+                    SET hostname=%s, ip_address=%s, os_name=%s,
+                        location=%s, description=%s, device_status=%s
                     WHERE id=%s
                     """,
                     (
-                        hostname, ip_address,
+                        hostname, ip_address, os_name or None,
                         location or None, description or None,
-                        server_id
+                        status, server_id
                     )
                 )
                 conn.commit()
@@ -768,7 +726,7 @@ WHERE id = %s
             return redirect(url_for("servers"))
 
         except ValueError:
-            flash("Format IP address tidak valid.", "error")
+            flash("Format IP address atau status tidak valid.", "error")
         except IntegrityError:
             flash("Hostname atau IP mungkin sudah digunakan.", "error")
         except mysql.connector.Error:

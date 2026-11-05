@@ -1,4 +1,4 @@
-const REFRESH_INTERVAL = 10000;
+const REFRESH_INTERVAL = 300000; // 5 menit
 const el = id => document.getElementById(id);
 let selectedServerId = null;
 let refreshTimer = null;

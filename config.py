@@ -6,7 +6,7 @@ DB_CONFIG = {
     "port": 3306
 }
 
-REFRESH_INTERVAL = 10000
+REFRESH_INTERVAL = 300000  # 5 menit
 
 # Dipakai agent.py untuk autentikasi saat kirim data monitoring ke server.
 AGENT_API_KEY = "ganti-dengan-api-key-agent-yang-unik"
