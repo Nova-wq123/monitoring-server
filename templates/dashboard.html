@@ -1,99 +1,707 @@
+```html
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ENKEI Monitoring | Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="dashboard-page">
-<div class="dashboard-shell">
-    <aside class="sidebar" id="sidebar">
-        <a class="side-brand" href="{{ url_for('dashboard') }}">
-            <span class="brand-symbol">E</span>
-            <span class="brand-copy"><strong>ENKEI</strong><small>SERVER MONITORING</small></span>
-        </a>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard | ENKEI Monitoring</title>
 
-        <div class="side-section-label">MENU UTAMA</div>
-        <nav class="side-nav" aria-label="Navigasi utama">
-            <a class="side-link active" href="{{ url_for('dashboard') }}"><span class="side-icon">▦</span><span>Dashboard</span></a>
-            <a class="side-link" href="{{ url_for('servers') }}"><span class="side-icon">▣</span><span>Kelola Server</span></a>
-            <a class="side-link" href="#resourceSection"><span class="side-icon">⌁</span><span>Monitoring Resource</span></a>
-            <a class="side-link" href="#backupSection"><span class="side-icon">◷</span><span>Backup Monitoring</span></a>
-            <a class="side-link" href="#diskSection"><span class="side-icon">▤</span><span>Disk Monitoring</span></a>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root {
+    --blue: #2478ee;
+    --blue-dark: #174b91;
+    --navy: #123c76;
+    --green: #087e70;
+    --bg: #f1f6ff;
+    --white: #fff;
+    --text: #17365f;
+    --muted: #7185a3;
+    --border: #e0eafa;
+}
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--text);
+    background: linear-gradient(135deg, #edf4ff, #f7fbff 60%, #e7f8f4);
+}
+button, a { font: inherit; }
+
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+    width: 235px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 14px;
+    color: white;
+    background: linear-gradient(160deg, #194b91, #123e78 65%, #086f70);
+}
+
+.brand {
+    text-align: center;
+    margin-bottom: 35px;
+}
+.brand-logo {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+.brand-sub {
+    font-size: 13px;
+    opacity: .85;
+    margin-top: 3px;
+}
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 14px;
+    margin-bottom: 7px;
+    color: #e8f1ff;
+    text-decoration: none;
+    border-radius: 10px;
+    transition: .2s;
+}
+.nav-link:hover, .nav-link.active {
+    color: white;
+    background: linear-gradient(100deg, #2582f5, #1762c8);
+}
+.nav-icon {
+    width: 22px;
+    text-align: center;
+    font-size: 18px;
+}
+.sidebar-footer {
+    margin-top: auto;
+    padding: 20px 5px 0;
+    font-size: 11px;
+    line-height: 1.7;
+    color: #d0e1ff;
+}
+
+/* MAIN */
+.main {
+    flex: 1;
+    min-width: 0;
+    padding: 27px;
+}
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 25px;
+}
+h1 {
+    font-size: 29px;
+    margin: 0;
+    color: #12396f;
+}
+.subtitle {
+    margin: 7px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 9px 14px;
+}
+.avatar {
+    width: 39px;
+    height: 39px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: var(--blue-dark);
+    background: #e2edff;
+    font-size: 20px;
+}
+.profile small {
+    display: block;
+    margin-top: 3px;
+    color: var(--muted);
+}
+
+/* CARDS */
+.card {
+    min-width: 0;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 5px 20px rgba(29,77,139,.055);
+}
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+.stat-icon {
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: #e4efff;
+    color: #176bd4;
+    font-size: 24px;
+}
+.stat-icon.green { background:#dcf8ec; color:#079568; }
+.stat-icon.purple { background:#f0e8ff; color:#8050d9; }
+.stat-icon.orange { background:#fff1dc; color:#df8a15; }
+.stat-label { font-size: 12px; color: var(--muted); }
+.stat-value {
+    font-size: 28px;
+    font-weight: 750;
+    margin-top: 5px;
+    color: #153d78;
+}
+.stat-note { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+.content-grid {
+    display: grid;
+    grid-template-columns: minmax(0,1.65fr) minmax(290px,1fr);
+    gap: 18px;
+}
+.panel { margin-bottom: 18px; }
+.panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 17px;
+}
+.panel-heading h2 {
+    margin: 0;
+    font-size: 16px;
+    color: #173e79;
+}
+.panel-heading small { color: var(--muted); font-size: 11px; }
+
+.legend {
+    display: flex;
+    gap: 17px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+}
+.dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+.chart-wrap { height: 270px; position: relative; }
+
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(3,minmax(0,1fr));
+    gap: 13px;
+    margin-bottom: 18px;
+}
+.resource-title { font-size: 13px; font-weight: 650; }
+.resource-number {
+    font-size: 27px;
+    font-weight: 750;
+    margin: 17px 0 12px;
+}
+.progress {
+    height: 8px;
+    background: #e9eff8;
+    border-radius: 10px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 10px;
+    background: linear-gradient(90deg,#3185fa,#165bc1);
+}
+.progress-fill.green { background: linear-gradient(90deg,#36c99b,#07966c); }
+.progress-fill.orange { background: linear-gradient(90deg,#ffc35a,#e98c0a); }
+.resource-foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 6px;
+    margin-top: 9px;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+/* STATUS */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border-radius: 20px;
+    font-size: 11px;
+    white-space: nowrap;
+}
+.badge::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    background: currentColor;
+    border-radius: 50%;
+}
+.badge.online, .badge.success { background:#def8ec; color:#078758; }
+.badge.offline, .badge.failed { background:#ffe5e8; color:#d92d40; }
+.badge.unknown, .badge.warning { background:#fff1d9; color:#a96a08; }
+
+/* TABLES */
+.table-wrap { overflow-x: auto; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th {
+    text-align:left;
+    color:#647b9d;
+    font-weight:600;
+    background:#f4f8ff;
+    padding:12px 9px;
+    white-space:nowrap;
+}
+td {
+    padding:12px 9px;
+    border-bottom:1px solid #edf1f8;
+    vertical-align:middle;
+}
+tbody tr:last-child td { border-bottom:none; }
+.empty {
+    text-align:center;
+    padding:22px 10px;
+    color:var(--muted);
+    line-height:1.7;
+}
+.footer {
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    padding:19px 0 3px;
+    font-size:11px;
+    color:var(--muted);
+}
+
+@media(max-width:1200px) {
+    .stats { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .content-grid { grid-template-columns:1fr; }
+}
+@media(max-width:700px) {
+    .sidebar { width:70px; padding:18px 8px; }
+    .brand-logo { font-size:15px; }
+    .brand-sub,.nav-text,.sidebar-footer { display:none; }
+    .nav-link { justify-content:center; padding:13px 4px; }
+    .main { padding:15px 10px; }
+    h1 { font-size:23px; }
+    .profile { padding:7px; }
+    .profile > div:last-child { display:none; }
+    .stats { gap:9px; }
+    .stat-card { padding:13px; flex-direction:column; align-items:flex-start; }
+    .stat-icon { width:42px; height:42px; }
+    .stat-value { font-size:23px; }
+    .resource-grid { grid-template-columns:1fr; }
+    .chart-wrap { height:220px; }
+    .footer { flex-direction:column; }
+}
+</style>
+</head>
+
+<body>
+<div class="layout">
+
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-logo">∞ ENKEI</div>
+            <div class="brand-sub">Monitoring</div>
+        </div>
+
+        <nav>
+            <a class="nav-link active" href="/dashboard">
+                <span class="nav-icon">▦</span>
+                <span class="nav-text">Dashboard</span>
+            </a>
+            <a class="nav-link" href="/servers">
+                <span class="nav-icon">▤</span>
+                <span class="nav-text">Servers</span>
+            </a>
+            <a class="nav-link" href="/monitoring">
+                <span class="nav-icon">⌁</span>
+                <span class="nav-text">Monitoring</span>
+            </a>
+            <a class="nav-link" href="/backup">
+                <span class="nav-icon">▣</span>
+                <span class="nav-text">Backup</span>
+            </a>
+            <a class="nav-link" href="/reports">
+                <span class="nav-icon">▤</span>
+                <span class="nav-text">Reports</span>
+            </a>
+            <a class="nav-link" href="/export">
+                <span class="nav-icon">⇩</span>
+                <span class="nav-text">Export Excel</span>
+            </a>
         </nav>
 
-        <div class="sidebar-bottom">
-            <div class="side-status-dot"></div>
-            <div><strong>Monitoring System</strong><small>Dashboard lokal</small></div>
+        <div class="sidebar-footer">
+            ENKEI Monitoring v1.0<br>
+            IT Infrastructure Monitoring System
         </div>
     </aside>
 
-    <main class="main-area">
-        <header class="main-topbar">
-            <div class="topbar-title"><button class="mobile-menu" id="mobileMenu" aria-label="Buka menu">☰</button><div><strong>Dashboard</strong><small>Ringkasan infrastruktur server</small></div></div>
-            <div class="topbar-user"><span class="user-avatar">{{ (fullname or 'A')[0]|upper }}</span><div class="user-copy"><strong>{{ fullname }}</strong><small>Administrator</small></div><a class="top-logout" href="{{ url_for('logout') }}" title="Logout" aria-label="Logout">↗</a></div>
+    <main class="main">
+        <header class="topbar">
+            <div>
+                <h1>Dashboard</h1>
+                <p class="subtitle">
+                    Overview kondisi server dan sistem monitoring ENKEI
+                </p>
+            </div>
+
+            <div class="profile">
+                <div class="avatar">♙</div>
+                <div>
+                    <strong>{{ fullname | default('Administrator') }}</strong>
+                    <small>Administrator</small>
+                </div>
+            </div>
         </header>
 
-        <div class="dashboard-content">
-            <section class="welcome-row">
+        <section class="stats">
+            <article class="card stat-card">
+                <div class="stat-icon">▤</div>
                 <div>
-                    <p class="eyebrow">IT INFRASTRUCTURE</p>
-                    <h1>Server Monitoring</h1>
-                    <p class="welcome-subtitle">Pantau kesehatan server dan penggunaan resource dalam satu dashboard.</p>
+                    <div class="stat-label">Total Server</div>
+                    <div class="stat-value" id="totalServers">—</div>
+                    <div class="stat-note">Server terdaftar</div>
                 </div>
-                <div class="server-controls">
-                    <label for="serverSelect">Server yang dipantau</label>
-                    <select id="serverSelect"><option value="">Memuat daftar server...</option></select>
-                    <span class="live-pill"><span></span> LIVE MONITORING</span>
+            </article>
+
+            <article class="card stat-card">
+                <div class="stat-icon green">▦</div>
+                <div>
+                    <div class="stat-label">CPU Usage</div>
+                    <div class="stat-value" id="cpuValue">—</div>
+                    <div class="stat-note">Penggunaan prosesor</div>
                 </div>
-            </section>
+            </article>
 
-            <section class="metric-grid" aria-label="Ringkasan monitoring">
-                <article class="metric-card metric-blue"><div class="metric-top"><span class="metric-label">Total Server</span><span class="metric-icon">▣</span></div><div class="metric-value" id="totalServers">--</div><div class="metric-foot"><span class="metric-foot-dot"></span>Server terdaftar</div></article>
-                <article class="metric-card metric-green"><div class="metric-top"><span class="metric-label">Server Online</span><span class="metric-icon">⌁</span></div><div class="metric-value" id="onlineServers">--</div><div class="metric-foot"><span class="metric-foot-dot"></span><span id="onlineCaption">Status agent</span></div></article>
-                <article class="metric-card metric-purple"><div class="metric-top"><span class="metric-label">CPU Usage</span><span class="metric-icon">◉</span></div><div class="metric-value" id="cpuValue">--<small>%</small></div><div class="metric-foot"><span id="cpuStatus" class="status-chip status-unknown">Menunggu data</span></div></article>
-                <article class="metric-card metric-pink"><div class="metric-top"><span class="metric-label">RAM Usage</span><span class="metric-icon">▥</span></div><div class="metric-value" id="ramValue">--<small>%</small></div><div class="metric-foot"><span id="ramStatus" class="status-chip status-unknown">Menunggu data</span></div></article>
-            </section>
+            <article class="card stat-card">
+                <div class="stat-icon purple">▥</div>
+                <div>
+                    <div class="stat-label">RAM Usage</div>
+                    <div class="stat-value" id="ramValue">—</div>
+                    <div class="stat-note">Penggunaan memori</div>
+                </div>
+            </article>
 
-            <section class="content-grid" id="resourceSection">
-                <article class="panel chart-panel">
-                    <div class="panel-heading"><div><h2>CPU &amp; RAM History</h2><p>Riwayat pemakaian resource server terpilih</p></div><span class="panel-tag">REAL-TIME</span></div>
-                    <div class="chart-wrap"><canvas id="resourceChart"></canvas></div>
+            <article class="card stat-card">
+                <div class="stat-icon orange">▣</div>
+                <div>
+                    <div class="stat-label">Disk Usage</div>
+                    <div class="stat-value" id="diskValue">—</div>
+                    <div class="stat-note">Penggunaan penyimpanan</div>
+                </div>
+            </article>
+        </section>
+
+        <section class="content-grid">
+            <div>
+                <article class="card panel">
+                    <div class="panel-heading">
+                        <h2>⌁ Tren Penggunaan CPU & RAM</h2>
+                        <small>Riwayat monitoring</small>
+                    </div>
+
+                    <div class="legend">
+                        <span><i class="dot" style="background:#2378f6"></i>CPU</span>
+                        <span><i class="dot" style="background:#8654f5"></i>RAM</span>
+                    </div>
+
+                    <div class="chart-wrap">
+                        <canvas id="usageChart"></canvas>
+                    </div>
                 </article>
-                <article class="panel status-panel">
-                    <div class="panel-heading"><div><h2>Status Infrastruktur</h2><p>Kondisi koneksi agent</p></div><span class="panel-icon">◉</span></div>
-                    <div class="donut-wrap"><canvas id="serverStatusChart"></canvas><div class="donut-center"><strong id="donutOnline">0</strong><span>Online</span></div></div>
-                    <div class="legend-list"><div><span class="legend-dot legend-online"></span><span>Online</span><strong id="legendOnline">0</strong></div><div><span class="legend-dot legend-offline"></span><span>Offline</span><strong id="legendOffline">0</strong></div></div>
-                    <div class="selected-server"><div class="selected-server-icon">▣</div><div class="selected-server-copy"><small>SERVER TERPILIH</small><strong id="serverName">Menunggu data</strong><span id="ipAddress">-</span></div><span id="deviceBadge" class="status-chip status-unknown">--</span></div>
-                </article>
-            </section>
 
-            <section class="content-grid lower-grid">
-                <article class="panel info-panel">
-                    <div class="panel-heading"><div><h2>Informasi Server</h2><p>Detail server yang sedang dipilih</p></div><span class="panel-icon">ⓘ</span></div>
-                    <div class="info-list"><div class="info-row"><span>Hostname</span><strong id="hostname">-</strong></div><div class="info-row"><span>IP Address</span><strong id="serverIpInfo">-</strong></div><div class="info-row"><span>Update Monitoring</span><strong id="lastUpdate">-</strong></div><div class="info-row"><span>RAM Terpakai</span><strong id="ramUsed">-</strong></div><div class="info-row"><span>RAM Tersedia</span><strong id="ramAvailable">-</strong></div></div>
-                    <div class="backup-box" id="backupSection"><div class="backup-heading"><span class="backup-icon">◷</span><div><strong>Status Backup</strong><small>Data terakhir dari database</small></div><span id="backupValue" class="status-chip status-unknown">UNKNOWN</span></div><p id="backupDetail">Belum ada data backup.</p></div>
-                </article>
-                <article class="panel server-list-panel">
-                    <div class="panel-heading"><div><h2>Daftar Server</h2><p>Status koneksi semua server terdaftar</p></div><a class="panel-action" href="{{ url_for('servers') }}">Kelola server <span>→</span></a></div>
-                    <div class="table-wrap"><table class="modern-table"><thead><tr><th>Nama Server</th><th>IP Address</th><th>Status</th><th>Aksi</th></tr></thead><tbody id="serverTable"><tr><td colspan="4" class="table-empty">Memuat data server...</td></tr></tbody></table></div>
-                </article>
-            </section>
+                <section class="resource-grid">
+                    <article class="card">
+                        <div class="resource-title">CPU Usage</div>
+                        <div class="resource-number" id="cpuDetail">—</div>
+                        <div class="progress">
+                            <div class="progress-fill" id="cpuBar"></div>
+                        </div>
+                        <div class="resource-foot">
+                            <span>Penggunaan CPU</span>
+                            <span id="cpuCaption">Belum ada data</span>
+                        </div>
+                    </article>
 
-            <section class="panel disk-panel" id="diskSection">
-                <div class="panel-heading"><div><h2>Disk Monitoring</h2><p>Penggunaan penyimpanan pada server terpilih</p></div><span class="panel-tag">STORAGE</span></div>
-                <div class="table-wrap"><table class="modern-table disk-table"><thead><tr><th>Drive</th><th>Total</th><th>Terpakai</th><th>Tersedia</th><th>Penggunaan</th><th>Status</th></tr></thead><tbody id="diskTable"><tr><td colspan="6" class="table-empty">Menunggu data disk...</td></tr></tbody></table></div>
-            </section>
+                    <article class="card">
+                        <div class="resource-title">RAM Usage</div>
+                        <div class="resource-number" id="ramDetail">—</div>
+                        <div class="progress">
+                            <div class="progress-fill green" id="ramBar"></div>
+                        </div>
+                        <div class="resource-foot">
+                            <span>Penggunaan RAM</span>
+                            <span id="ramCaption">Belum ada data</span>
+                        </div>
+                    </article>
 
-            <footer class="dashboard-footer"><span id="connectionStatus"><span class="footer-dot"></span>Menghubungkan ke server...</span><span>ENKEI Monitoring System · 2026</span></footer>
-        </div>
+                    <article class="card">
+                        <div class="resource-title">Disk Usage</div>
+                        <div class="resource-number" id="diskDetail">—</div>
+                        <div class="progress">
+                            <div class="progress-fill orange" id="diskBar"></div>
+                        </div>
+                        <div class="resource-foot">
+                            <span>Penyimpanan</span>
+                            <span id="diskCaption">Belum ada data</span>
+                        </div>
+                    </article>
+                </section>
+
+                <article class="card panel">
+                    <div class="panel-heading">
+                        <h2>▣ Disk Monitoring</h2>
+                        <small>Detail kapasitas penyimpanan</small>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Drive</th>
+                                    <th>Total (GB)</th>
+                                    <th>Terpakai (GB)</th>
+                                    <th>Sisa (GB)</th>
+                                    <th>Penggunaan</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="diskTable">
+                                <tr><td colspan="6" class="empty">
+                                    Menunggu data disk dari server...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+            </div>
+
+            <div>
+                <article class="card panel">
+                    <div class="panel-heading">
+                        <h2>▤ Status Server</h2>
+                        <small>Server terdaftar</small>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Server</th>
+                                    <th>IP Address</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="serverTable">
+                                <tr><td colspan="3" class="empty">
+                                    Menunggu data server...
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="card panel">
+                    <div class="panel-heading">
+                        <h2>▣ Status Backup</h2>
+                        <small>Data backup terbaru</small>
+                    </div>
+
+                    <div class="table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nama Backup</th>
+                                    <th>Status</th>
+                                    <th>Waktu</th>
+                                </tr>
+                            </thead>
+                            <tbody id="backupTable">
+                                <tr><td colspan="3" class="empty">
+                                    Belum ada data backup yang tersedia.
+                                </td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </article>
+
+                <article class="card panel">
+                    <div class="panel-heading">
+                        <h2>◷ Informasi Sistem</h2>
+                    </div>
+
+                    <div class="resource-foot">
+                        <span>Waktu sekarang</span>
+                        <strong id="currentTime">—</strong>
+                    </div>
+
+                    <div class="resource-foot">
+                        <span>Pembaruan dashboard</span>
+                        <strong id="lastRefresh">—</strong>
+                    </div>
+
+                    <div class="resource-foot">
+                        <span>Status data</span>
+                        <strong id="dataStatus">Menunggu data</strong>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <span>Windows Server Monitoring System · 2026</span>
+            <span>ENKEI Manufacturing</span>
+        </footer>
     </main>
 </div>
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+
+<script>
+/*
+ * Desain dashboard sudah disiapkan.
+ * Integrasi data asli perlu disesuaikan dengan endpoint Flask proyek.
+ * Tidak ada angka monitoring atau status backup yang dibuat-buat.
+ */
+
+const REFRESH_INTERVAL = 10000;
+
+function showPercent(value) {
+    if (value === null || value === undefined || value === "") return "—";
+    const n = Number(value);
+    return Number.isFinite(n) ? n.toFixed(1) + "%" : "—";
+}
+
+function updateResource(name, value) {
+    const valid = value !== null && value !== undefined &&
+                  value !== "" && Number.isFinite(Number(value));
+    const number = valid ? Math.max(0, Math.min(100, Number(value))) : 0;
+    const text = valid ? showPercent(number) : "—";
+
+    document.getElementById(name + "Value").textContent = text;
+    document.getElementById(name + "Detail").textContent = text;
+    document.getElementById(name + "Bar").style.width = number + "%";
+    document.getElementById(name + "Caption").textContent =
+        valid ? text : "Belum ada data";
+}
+
+function safeText(value) {
+    return String(value ?? "—").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[ch]);
+}
+
+function setTableMessage(id, columns, message) {
+    document.getElementById(id).innerHTML =
+        `<tr><td colspan="${columns}" class="empty">${safeText(message)}</td></tr>`;
+}
+
+/*
+ * Grafik dimulai kosong sampai riwayat monitoring dari server
+ * dihubungkan ke chart ini.
+ */
+let usageChart = null;
+
+if (window.Chart) {
+    usageChart = new Chart(document.getElementById("usageChart"), {
+        type: "line",
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: "CPU",
+                    data: [],
+                    borderColor: "#2378f6",
+                    backgroundColor: "rgba(35,120,246,.08)",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: .35
+                },
+                {
+                    label: "RAM",
+                    data: [],
+                    borderColor: "#8654f5",
+                    backgroundColor: "rgba(134,84,245,.07)",
+                    borderWidth: 2,
+                    pointRadius: 2,
+                    tension: .35
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+                y: {
+                    min: 0,
+                    max: 100,
+                    ticks: { callback: value => value + "%" }
+                }
+            }
+        }
+    });
+}
+
+function refreshClock() {
+    document.getElementById("currentTime").textContent =
+        new Date().toLocaleString("id-ID");
+}
+refreshClock();
+setInterval(refreshClock, 1000);
+
+/*
+ * Placeholder tampilan sampai endpoint data asli dipasang.
+ * Jangan menghubungkan fetch ke URL yang belum dipastikan
+ * karena endpoint API setiap proyek bisa berbeda.
+ */
+updateResource("cpu", null);
+updateResource("ram", null);
+updateResource("disk", null);
+
+setTableMessage("serverTable", 3, "Data server belum dihubungkan.");
+setTableMessage("diskTable", 6, "Data disk belum dihubungkan.");
+setTableMessage("backupTable", 3, "Data backup belum tersedia.");
+
+document.getElementById("totalServers").textContent = "—";
+document.getElementById("lastRefresh").textContent = "Belum tersedia";
+document.getElementById("dataStatus").textContent = "Menunggu integrasi";
+</script>
 </body>
 </html>
+```

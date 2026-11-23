@@ -1,4 +1,4 @@
-import os
+﻿import os
 import csv
 import io
 import ipaddress
@@ -150,14 +150,45 @@ def logout():
 
 
 # ==========================================
-# DASHBOARD
+# DASHBOARD & HALAMAN MENU UTAMA TERPISAH
 # ==========================================
 @app.route("/dashboard")
 @login_required
 def dashboard():
     return render_template(
         "dashboard.html",
-        fullname=session.get("fullname", "Administrator")
+        fullname=session.get("fullname", "Administrator"),
+        active_page="dashboard"
+    )
+
+
+@app.route("/monitoring/resource")
+@login_required
+def monitoring_resource():
+    return render_template(
+        "monitoring_resource.html",
+        fullname=session.get("fullname", "Administrator"),
+        active_page="resource"
+    )
+
+
+@app.route("/monitoring/backup")
+@login_required
+def monitoring_backup():
+    return render_template(
+        "monitoring_backup.html",
+        fullname=session.get("fullname", "Administrator"),
+        active_page="backup"
+    )
+
+
+@app.route("/monitoring/disk")
+@login_required
+def monitoring_disk():
+    return render_template(
+        "monitoring_disk.html",
+        fullname=session.get("fullname", "Administrator"),
+        active_page="disk"
     )
 
 
@@ -182,14 +213,14 @@ def status_by_threshold(value, warning_at, critical_at):
 
 
 # ==========================================
-# DAFTAR SERVER UNTUK DROPDOWN DASHBOARD
+# DAFTAR SERVER UNTUK DASHBOARD INTERAKTIF
 # ==========================================
 @app.route("/api/servers")
 @login_required
 def api_servers():
     rows = query_all(
         """
-        SELECT id, hostname, ip_address, last_seen
+        SELECT id, hostname, ip_address, os_name, location, last_seen
         FROM servers
         ORDER BY hostname
         """
@@ -200,11 +231,12 @@ def api_servers():
             "id": row["id"],
             "hostname": row["hostname"],
             "ip_address": row["ip_address"],
+            "os_name": row.get("os_name") or "Windows Server",
+            "location": row.get("location") or "Server Room",
             "device_status": compute_device_status(row["last_seen"])
         }
         for row in rows
     ])
-
 
 # ==========================================
 # API MONITORING (dibaca dashboard)
@@ -276,6 +308,18 @@ def api_monitoring():
             (server["id"],)
         )
 
+        # ---> TAMBAHAN 1: Query riwayat backup
+        backup_history = query_all(
+            """
+            SELECT backup_name, backup_status, message, checked_at
+            FROM backup_monitoring
+            WHERE server_id = %s
+            ORDER BY checked_at DESC
+            LIMIT 10
+            """,
+            (server["id"],)
+        )
+
         history = query_all(
             """
             SELECT cpu_usage, ram_usage, collected_at
@@ -323,6 +367,16 @@ def api_monitoring():
                 "checked_at": str((backup_row or {}).get("checked_at") or "-"),
                 "message": (backup_row or {}).get("message") or "Belum ada data backup."
             },
+            # ---> TAMBAHAN 2: Masukkan ke dalam JSON response
+            "backup_history": [
+                {
+                    "name": row.get("backup_name") or "-",
+                    "status": row.get("backup_status") or "UNKNOWN",
+                    "message": row.get("message") or "-",
+                    "checked_at": str(row.get("checked_at") or "-")
+                }
+                for row in backup_history
+            ],
             "updated_at": str(
                 (latest or {}).get("collected_at")
                 or server["last_seen"]
@@ -345,7 +399,6 @@ def api_monitoring():
             "error": "Gagal membaca data monitoring.",
             "detail": str(exc)
         }), 500
-
 
 # ==========================================
 # API INGEST (dipanggil agent.py di tiap server)
@@ -790,11 +843,11 @@ def export_monitoring():
             """
             SELECT s.hostname, s.ip_address,
                    m.cpu_usage, m.ram_usage,
-                   m.ram_total, m.ram_used,
-                   m.ram_available, m.status, m.created_at
+                   m.ram_total_mb, m.ram_used_mb,
+                   m.ram_available_mb, m.cpu_status, m.collected_at
             FROM monitoring m
             JOIN servers s ON s.id = m.server_id
-            ORDER BY m.created_at DESC
+            ORDER BY m.collected_at DESC
             """
         )
 
@@ -804,7 +857,7 @@ def export_monitoring():
             "Hostname", "IP Address", "CPU Usage (%)",
             "RAM Usage (%)", "RAM Total (MB)",
             "RAM Terpakai (MB)", "RAM Tersedia (MB)",
-            "Status Monitoring", "Waktu Monitoring"
+            "Status CPU", "Waktu Monitoring"
         ])
         writer.writerows(cursor.fetchall())
 
@@ -819,8 +872,6 @@ def export_monitoring():
     finally:
         cursor.close()
         conn.close()
-
-
 # ==========================================
 # JALANKAN APLIKASI
 # ==========================================

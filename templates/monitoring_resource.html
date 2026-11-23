@@ -1,0 +1,52 @@
+{% extends "base_monitoring.html" %}
+{% block title %}ENKEI Monitoring | Monitoring Resource{% endblock %}
+{% block topbar_title %}Monitoring Resource{% endblock %}
+{% block topbar_subtitle %}Pemantauan beban CPU & RAM secara real-time{% endblock %}
+{% block page_eyebrow %}RESOURCE PERFORMANCE{% endblock %}
+{% block page_heading %}CPU &amp; RAM Monitoring{% endblock %}
+{% block page_subtitle %}Grafik riwayat performa dan detail penggunaan memori untuk server yang dipilih.{% endblock %}
+
+{% block page_content %}
+<section class="metric-grid">
+    <article class="metric-card metric-purple">
+        <div class="metric-top"><span class="metric-label">CPU Usage (<span id="cpuCardHost">-</span>)</span><span class="metric-icon">◉</span></div>
+        <div class="metric-value" id="cpuValue">--<small>%</small></div>
+        <div class="metric-foot"><span id="cpuStatus" class="status-chip status-unknown">Menunggu data</span></div>
+    </article>
+    <article class="metric-card metric-pink">
+        <div class="metric-top"><span class="metric-label">RAM Usage (<span id="ramCardHost">-</span>)</span><span class="metric-icon">▥</span></div>
+        <div class="metric-value" id="ramValue">--<small>%</small></div>
+        <div class="metric-foot"><span id="ramStatus" class="status-chip status-unknown">Menunggu data</span></div>
+    </article>
+    <article class="metric-card metric-blue">
+        <div class="metric-top"><span class="metric-label">RAM Terpakai</span><span class="metric-icon">▣</span></div>
+        <div class="metric-value" id="ramUsed">-</div>
+        <div class="metric-foot"><span>Alokasi memori aktif</span></div>
+    </article>
+    <article class="metric-card metric-green">
+        <div class="metric-top"><span class="metric-label">RAM Tersedia</span><span class="metric-icon">⌁</span></div>
+        <div class="metric-value" id="ramAvailable">-</div>
+        <div class="metric-foot"><span>Sisa kapasitas memori</span></div>
+    </article>
+</section>
+
+<section class="content-grid">
+    <article class="panel chart-panel">
+        <div class="panel-heading">
+            <div><h2>CPU &amp; RAM History — <span id="chartServerTitle" style="color:#2563eb;">-</span></h2><p>20 titik rekaman pemakaian resource terakhir</p></div>
+            <span class="panel-tag">REAL-TIME</span>
+        </div>
+        <div class="chart-wrap"><canvas id="resourceChart"></canvas></div>
+    </article>
+
+    <article class="panel info-panel">
+        <div class="panel-heading"><div><h2>Detail Identitas Server</h2><p>Informasi perangkat aktif</p></div><span class="panel-icon">ⓘ</span></div>
+        <div class="info-list">
+            <div class="info-row"><span>Hostname</span><strong id="hostname">-</strong></div>
+            <div class="info-row"><span>IP Address</span><strong id="serverIpInfo">-</strong></div>
+            <div class="info-row"><span>Status Agent</span><strong id="deviceBadge" class="status-chip status-unknown">--</strong></div>
+            <div class="info-row"><span>Update Terakhir</span><strong id="lastUpdate">-</strong></div>
+        </div>
+    </article>
+</section>
+{% endblock %}
