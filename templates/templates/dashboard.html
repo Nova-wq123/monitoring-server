@@ -1,0 +1,68 @@
+{% extends "base_monitoring.html" %}
+{% block title %}ENKEI Monitoring | Dashboard{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block topbar_subtitle %}Ringkasan status seluruh server terdaftar{% endblock %}
+{% block page_heading %}Overview Server{% endblock %}
+{% block page_subtitle %}Pilih server di atas untuk masuk ke halaman Resource, Backup, atau Disk masing-masing server.{% endblock %}
+
+{% block page_content %}
+<section class="metric-grid" aria-label="Ringkasan server">
+    <article class="metric-card metric-blue">
+        <div class="metric-top"><span class="metric-label">Total Server</span><span class="metric-icon">▣</span></div>
+        <div class="metric-value" id="totalServers">--</div>
+        <div class="metric-foot"><span class="metric-foot-dot"></span>Server terdaftar</div>
+    </article>
+    <article class="metric-card metric-green">
+        <div class="metric-top"><span class="metric-label">Server Online</span><span class="metric-icon">⌁</span></div>
+        <div class="metric-value" id="onlineServers">--</div>
+        <div class="metric-foot"><span class="metric-foot-dot"></span><span id="onlineCaption">Status agent</span></div>
+    </article>
+    <article class="metric-card metric-purple">
+        <div class="metric-top"><span class="metric-label">Server Terpilih</span><span class="metric-icon">◉</span></div>
+        <div class="metric-value" style="font-size:1.35rem;" id="serverName">-</div>
+        <div class="metric-foot"><span id="deviceBadge" class="status-chip status-unknown">--</span></div>
+    </article>
+    <article class="metric-card metric-pink">
+        <div class="metric-top"><span class="metric-label">Akses Modul Cepat</span><span class="metric-icon">▤</span></div>
+        <div class="quick-links-bar">
+            <a class="quick-link-pill keep-server" href="{{ url_for('monitoring_resource') }}">⌁ Resource</a>
+            <a class="quick-link-pill keep-server" href="{{ url_for('monitoring_backup') }}">◷ Backup</a>
+            <a class="quick-link-pill keep-server" href="{{ url_for('monitoring_disk') }}">▤ Disk</a>
+        </div>
+        <div class="metric-foot" style="margin-top:8px;"><span>Buka detail server terpilih</span></div>
+    </article>
+</section>
+
+<section class="content-grid">
+    <article class="panel server-list-panel">
+        <div class="panel-heading">
+            <div><h2>Daftar Server Terdaftar</h2><p>Akses langsung modul pemantauan untuk setiap server</p></div>
+            <a class="panel-action" href="{{ url_for('servers') }}">Kelola server <span>→</span></a>
+        </div>
+        <div class="table-wrap">
+            <table class="modern-table">
+                <thead>
+                    <tr>
+                        <th>Nama Server</th>
+                        <th>IP Address</th>
+                        <th>Status</th>
+                        <th>Akses Modul Monitoring</th>
+                    </tr>
+                </thead>
+                <tbody id="serverTable">
+                    <tr><td colspan="4" class="table-empty">Memuat data server...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </article>
+
+    <article class="panel status-panel">
+        <div class="panel-heading"><div><h2>Status Infrastruktur</h2><p>Proporsi koneksi agent</p></div><span class="panel-icon">◉</span></div>
+        <div class="donut-wrap"><canvas id="serverStatusChart"></canvas><div class="donut-center"><strong id="donutOnline">0</strong><span>Online</span></div></div>
+        <div class="legend-list">
+            <div><span class="legend-dot legend-online"></span><span>Online</span><strong id="legendOnline">0</strong></div>
+            <div><span class="legend-dot legend-offline"></span><span>Offline</span><strong id="legendOffline">0</strong></div>
+        </div>
+    </article>
+</section>
+{% endblock %}

@@ -1,0 +1,45 @@
+﻿{% extends "base_monitoring.html" %}
+{% block title %}ENKEI Monitoring | Backup Monitoring{% endblock %}
+{% block topbar_title %}Backup Monitoring{% endblock %}
+{% block topbar_subtitle %}Status pencadangan data Windows Server{% endblock %}
+{% block page_eyebrow %}DATA PROTECTION{% endblock %}
+{% block page_heading %}Backup Monitoring{% endblock %}
+{% block page_subtitle %}Pantau status keberhasilan dan riwayat log backup pada server yang dipilih.{% endblock %}
+
+{% block page_content %}
+<section class="content-grid">
+    <article class="panel info-panel">
+        <div class="panel-heading">
+            <div><h2>Status Backup Terakhir — <span id="backupServerTitle" style="color:#2563eb;">-</span></h2><p>Hasil pengecekan terakhir oleh agent</p></div>
+            <span id="backupValue" class="status-chip status-unknown">UNKNOWN</span>
+        </div>
+        <div class="info-list">
+            <div class="info-row"><span>Server</span><strong id="hostname">-</strong></div>
+            <div class="info-row"><span>IP Address</span><strong id="serverIpInfo">-</strong></div>
+            <div class="info-row"><span>Nama Task Backup</span><strong id="backupName">-</strong></div>
+            <div class="info-row"><span>Waktu Pengecekan</span><strong id="backupCheckedAt">-</strong></div>
+        </div>
+        <div class="backup-box" style="margin-top:16px;">
+            <div class="backup-heading"><span class="backup-icon">◷</span><div><strong>Keterangan / Log Pesan</strong><small>Detail dari sistem backup</small></div></div>
+            <p id="backupDetail">Belum ada data backup.</p>
+        </div>
+    </article>
+
+    <article class="panel server-list-panel">
+        <div class="panel-heading">
+            <div><h2>Riwayat Log Backup</h2><p>10 aktivitas backup terakhir pada server ini</p></div>
+            <span class="panel-tag">HISTORY</span>
+        </div>
+        <div class="table-wrap">
+            <table class="modern-table">
+                <thead>
+                    <tr><th>Waktu</th><th>Nama Backup</th><th>Status</th><th>Keterangan</th></tr>
+                </thead>
+                <tbody id="backupHistoryTable">
+                    <tr><td colspan="4" class="table-empty">Memuat riwayat backup...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </article>
+</section>
+{% endblock %}

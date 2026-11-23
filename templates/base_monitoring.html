@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -11,76 +11,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .server-switcher-section { margin-bottom: 24px; }
-        .switcher-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px; flex-wrap: wrap; gap: 10px;
-        }
-        .switcher-header h3 {
-            font-size: 0.85rem; font-weight: 700; color: #475569;
-            text-transform: uppercase; letter-spacing: 0.05em; margin: 0;
-        }
+        .switcher-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 10px; }
+        .switcher-header h3 { font-size: 0.85rem; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin: 0; }
         .switcher-actions { display: flex; align-items: center; gap: 8px; }
-        .nav-btn {
-            background: #ffffff; border: 1px solid #e2e8f0; color: #1e293b;
-            padding: 6px 12px; border-radius: 8px; font-size: 0.82rem;
-            font-weight: 600; cursor: pointer; transition: all 0.2s ease;
-            display: inline-flex; align-items: center; gap: 6px; text-decoration: none;
-        }
-        .nav-btn:hover:not(:disabled) {
-            background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px);
-        }
+        .nav-btn { background: #ffffff; border: 1px solid #e2e8f0; color: #1e293b; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+        .nav-btn:hover:not(:disabled) { background: #f1f5f9; border-color: #cbd5e1; transform: translateY(-1px); }
         .nav-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .nav-btn.primary-refresh { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
         .nav-btn.primary-refresh:hover { background: #dbeafe; }
-
-        .server-cards-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px;
-        }
-        .srv-card {
-            background: #ffffff; border: 2px solid #e2e8f0; border-radius: 14px;
-            padding: 14px 16px; cursor: pointer; transition: all 0.22s ease;
-            position: relative; display: flex; flex-direction: column; gap: 6px;
-            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
-        }
-        .srv-card:hover {
-            border-color: #93c5fd; transform: translateY(-2px);
-            box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
-        }
-        .srv-card.active {
-            border-color: #2563eb;
-            background: linear-gradient(145deg, #ffffff 0%, #eff6ff 100%);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.14);
-        }
-        .srv-card.active::after {
-            content: "AKTIF DIPANTAU"; position: absolute; top: -10px; right: 12px;
-            background: #2563eb; color: #fff; font-size: 0.65rem; font-weight: 700;
-            padding: 2px 8px; border-radius: 99px; letter-spacing: 0.04em;
-        }
+        .server-cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+        .srv-card { background: #ffffff; border: 2px solid #e2e8f0; border-radius: 14px; padding: 14px 16px; cursor: pointer; transition: all 0.22s ease; position: relative; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03); }
+        .srv-card:hover { border-color: #93c5fd; transform: translateY(-2px); box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08); }
+        .srv-card.active { border-color: #2563eb; background: linear-gradient(145deg, #ffffff 0%, #eff6ff 100%); box-shadow: 0 8px 20px rgba(37, 99, 235, 0.14); }
+        .srv-card.active::after { content: "AKTIF DIPANTAU"; position: absolute; top: -10px; right: 12px; background: #2563eb; color: #fff; font-size: 0.65rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; letter-spacing: 0.04em; }
         .srv-card-top { display: flex; justify-content: space-between; align-items: center; }
-        .srv-hostname {
-            font-weight: 700; font-size: 0.98rem; color: #0f172a;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
+        .srv-hostname { font-weight: 700; font-size: 0.98rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .pulse-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
-        .pulse-dot.up { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); animation: pulseGreen 2s infinite; }
+        .pulse-dot.up { background: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2); }
         .pulse-dot.down { background: #ef4444; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2); }
         .srv-meta { display: flex; justify-content: space-between; font-size: 0.78rem; color: #64748b; }
         .srv-os { font-size: 0.75rem; color: #94a3b8; }
-        .quick-links-bar {
-            display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;
-        }
-        .quick-link-pill {
-            font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 6px;
-            background: #f1f5f9; color: #334155; text-decoration: none; border: 1px solid #e2e8f0;
-            transition: all 0.15s;
-        }
+        .quick-links-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+        .quick-link-pill { font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 6px; background: #f1f5f9; color: #334155; text-decoration: none; border: 1px solid #e2e8f0; transition: all 0.15s; }
         .quick-link-pill:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
         tr.row-selected { background-color: #eff6ff !important; font-weight: 600; }
-        @keyframes pulseGreen {
-            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.45); }
-            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
     </style>
 </head>
 <body class="dashboard-page">
@@ -90,29 +44,15 @@
             <span class="brand-symbol">E</span>
             <span class="brand-copy"><strong>ENKEI</strong><small>SERVER MONITORING</small></span>
         </a>
-
         <div class="side-section-label">MENU UTAMA</div>
         <nav class="side-nav" aria-label="Navigasi utama">
-            <a class="side-link keep-server {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                <span class="side-icon">▦</span><span>Dashboard</span>
-            </a>
-            <a class="side-link {% if active_page == 'servers' %}active{% endif %}" href="{{ url_for('servers') }}">
-                <span class="side-icon">▣</span><span>Kelola Server</span>
-            </a>
-            <a class="side-link keep-server {% if active_page == 'resource' %}active{% endif %}" href="{{ url_for('monitoring_resource') }}">
-                <span class="side-icon">⌁</span><span>Monitoring Resource</span>
-            </a>
-            <a class="side-link keep-server {% if active_page == 'backup' %}active{% endif %}" href="{{ url_for('monitoring_backup') }}">
-                <span class="side-icon">◷</span><span>Backup Monitoring</span>
-            </a>
-            <a class="side-link keep-server {% if active_page == 'disk' %}active{% endif %}" href="{{ url_for('monitoring_disk') }}">
-                <span class="side-icon">▤</span><span>Disk Monitoring</span>
-            </a>
-            <a class="side-link" href="{{ url_for('export_monitoring') }}">
-                <span class="side-icon">⇩</span><span>Export Laporan CSV</span>
-            </a>
+            <a class="side-link keep-server {% if active_page == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}"><span class="side-icon">▦</span><span>Dashboard</span></a>
+            <a class="side-link {% if active_page == 'servers' %}active{% endif %}" href="{{ url_for('servers') }}"><span class="side-icon">▣</span><span>Kelola Server</span></a>
+            <a class="side-link keep-server {% if active_page == 'resource' %}active{% endif %}" href="{{ url_for('monitoring_resource') }}"><span class="side-icon">⌁</span><span>Monitoring Resource</span></a>
+            <a class="side-link keep-server {% if active_page == 'backup' %}active{% endif %}" href="{{ url_for('monitoring_backup') }}"><span class="side-icon">◷</span><span>Backup Monitoring</span></a>
+            <a class="side-link keep-server {% if active_page == 'disk' %}active{% endif %}" href="{{ url_for('monitoring_disk') }}"><span class="side-icon">▤</span><span>Disk Monitoring</span></a>
+            <a class="side-link" href="{{ url_for('export_monitoring') }}"><span class="side-icon">⇩</span><span>Export Laporan CSV</span></a>
         </nav>
-
         <div class="sidebar-bottom">
             <div class="side-status-dot"></div>
             <div><strong>Monitoring System</strong><small>Dashboard lokal</small></div>
@@ -123,10 +63,7 @@
         <header class="main-topbar">
             <div class="topbar-title">
                 <button class="mobile-menu" id="mobileMenu" aria-label="Buka menu">☰</button>
-                <div>
-                    <strong>{% block topbar_title %}Dashboard{% endblock %}</strong>
-                    <small>{% block topbar_subtitle %}Ringkasan infrastruktur server{% endblock %}</small>
-                </div>
+                <div><strong>{% block topbar_title %}Dashboard{% endblock %}</strong><small>{% block topbar_subtitle %}Ringkasan infrastruktur server{% endblock %}</small></div>
             </div>
             <div class="topbar-user">
                 <span class="user-avatar">{{ (fullname or 'A')[0]|upper }}</span>
@@ -148,7 +85,6 @@
                 </div>
             </section>
 
-            <!-- PANEL PILIH SERVER SATU PER SATU (SELALU MUNCUL DI SEMUA HALAMAN MONITORING) -->
             <section class="server-switcher-section" aria-label="Pilih Server">
                 <div class="switcher-header">
                     <h3>Pilih Server untuk Dipantau (<span id="serverCountBadge">0</span>)</h3>

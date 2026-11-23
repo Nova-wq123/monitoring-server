@@ -1,0 +1,33 @@
+{% extends "base_monitoring.html" %}
+{% block title %}ENKEI Monitoring | Disk Monitoring{% endblock %}
+{% block topbar_title %}Disk Monitoring{% endblock %}
+{% block topbar_subtitle %}Kapasitas partisi penyimpanan server{% endblock %}
+{% block page_eyebrow %}STORAGE CAPACITY{% endblock %}
+{% block page_heading %}Disk Monitoring{% endblock %}
+{% block page_subtitle %}Pantau kapasitas total, terpakai, dan sisa ruang penyimpanan per partisi drive.{% endblock %}
+
+{% block page_content %}
+<section class="panel disk-panel">
+    <div class="panel-heading">
+        <div><h2>Partisi Penyimpanan — <span id="diskServerTitle" style="color:#2563eb;">-</span> (<span id="serverIpInfo">-</span>)</h2><p>Update terakhir: <strong id="lastUpdate">-</strong></p></div>
+        <span class="panel-tag">STORAGE</span>
+    </div>
+    <div class="table-wrap">
+        <table class="modern-table disk-table">
+            <thead>
+                <tr>
+                    <th>Drive</th>
+                    <th>Total Kapasitas</th>
+                    <th>Terpakai</th>
+                    <th>Tersedia</th>
+                    <th>Persentase Penggunaan</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody id="diskTable">
+                <tr><td colspan="6" class="table-empty">Menunggu data disk...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

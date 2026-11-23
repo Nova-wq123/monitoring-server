@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Daftar Server | ENKEI Monitoring</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand-inline">
+        <div class="brand-mark small">E</div>
+        <div>
+            <strong>ENKEI MONITORING</strong>
+            <small>Windows Server Infrastructure</small>
+        </div>
+    </div>
+    <div class="user-area">
+        <a class="nav-link" href="{{ url_for('dashboard') }}">Dashboard</a>
+        <span>{{ fullname }}</span>
+        <a class="logout" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+</header>
+
+<main class="container">
+    <section class="heading">
+        <div>
+            <p class="eyebrow">SERVER MANAGEMENT</p>
+            <h1>Daftar Server</h1>
+            <p class="muted">Kelola server yang dipantau sistem ini.</p>
+        </div>
+    </section>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash flash-{{ 'success' if category == 'success' else 'error' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="page-actions">
+        <p class="muted">Total server: {{ servers|length }}</p>
+        <a href="{{ url_for('server_add') }}" class="btn btn-primary">+ Tambah Server</a>
+    </div>
+
+    <section class="card disk-card">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Hostname</th>
+                        <th>IP Address</th>
+                        <th>Sistem Operasi</th>
+                        <th>Lokasi</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for server in servers %}
+                    <tr>
+                        <td>{{ server.hostname }}</td>
+                        <td>{{ server.ip_address }}</td>
+                        <td>{{ server.os_name or "-" }}</td>
+                        <td>{{ server.location or "-" }}</td>
+                        <td>
+                            <span class="status {{ 'status-critical' if server.device_status == 'DOWN' else '' }}">
+                                {{ server.device_status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div class="actions-cell">
+                                <a class="btn btn-secondary btn-sm"
+                                   href="{{ url_for('server_edit', server_id=server.id) }}">Edit</a>
+                                <form method="POST"
+                                      action="{{ url_for('server_delete', server_id=server.id) }}"
+                                      onsubmit="return confirm('Hapus server {{ server.hostname }}? Riwayat monitoring server ini juga akan terhapus.');">
+                                    <button type="submit" class="btn btn-danger btn-sm">Hapus</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">Belum ada server terdaftar.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+</body>
+</html>
